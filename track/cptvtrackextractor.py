@@ -287,7 +287,7 @@ class CPTVTrackExtractor(CPTVFileProcessor):
         if len(tracker.tracks) == 0:
             return
 
-        tracker.generate_optical_flow()
+        # tracker.generate_optical_flow()
 
         # get track data
         for track_number, track in enumerate(tracker.tracks):

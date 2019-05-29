@@ -282,8 +282,8 @@ class ClipClassifier(CPTVFileProcessor):
         print(f"{len(tracker.frame_buffer.filtered)} filtered len frame shape is {tracker.frame_buffer.filtered[0].shape} type {type(tracker.frame_buffer.filtered[0][0][0])}size of {sys.getsizeof(tracker.frame_buffer.filtered[0])}")
 
         # get_size("tracker",tracker)
-        if len(tracker.tracks) > 0:
-            tracker.generate_optical_flow()
+        # if len(tracker.tracks) > 0:
+        # tracker.generate_optical_flow()
         # get_size("tracker",tracker)
 
         classify_name = self.get_classify_filename(filename)

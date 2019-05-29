@@ -9,8 +9,11 @@ from ml_tools.config import Config
 from ml_tools.previewer import Previewer
 from .clipclassifier import ClipClassifier
 from .clipclassifier import get_size
+
 @profile
 def main():
+    a = [1] * 1000*1000
+    del a
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

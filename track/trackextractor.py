@@ -129,6 +129,7 @@ class TrackExtractor:
                 reader.y_resolution - 2 * edge,
             )
 
+    @profile
     def extract_tracks(self):
         """
         Extracts tracks from given source.  Setting self.tracks to a list of good tracks within the clip
@@ -313,7 +314,8 @@ class TrackExtractor:
 
         thermal = bounds.subimage(self.frame_buffer.thermal[tracker_frame])
         filtered = bounds.subimage(self.frame_buffer.filtered[tracker_frame])
-        flow = bounds.subimage(self.frame_buffer.flow[tracker_frame])
+        flow = filtered
+        # bounds.subimage(self.frame_buffer.flow[tracker_frame])
         mask = bounds.subimage(self.frame_buffer.mask[tracker_frame])
 
         # make sure only our pixels are included in the mask.
@@ -324,7 +326,7 @@ class TrackExtractor:
         # by using int16 we loose a little precision on the filtered frames, but not much (only 1 bit)
         # frame = np.int16(np.stack((thermal, filtered, flow, flow, mask), axis=0))
         frame = np.int16(
-            np.stack((thermal, filtered, flow[:, :, 0], flow[:, :, 1], mask), axis=0)
+            np.stack((thermal, filtered, flow, flow, mask), axis=0)
         )
 
         return frame
