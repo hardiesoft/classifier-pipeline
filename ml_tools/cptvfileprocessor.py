@@ -68,13 +68,13 @@ class CPTVFileProcessor:
 
         jobs = []
 
-        print('processing',folder_path)
 
         for file_name in os.listdir(folder_path):
             full_path = os.path.join(folder_path, file_name)
             if os.path.isfile(full_path) and os.path.splitext(full_path )[1].lower() == '.cptv':
-                if self.needs_processing(full_path):
-                    jobs.append((self, full_path, kwargs))
+                # if self.needs_processing(full_path):
+                jobs.append((self, full_path, kwargs))
+
 
         self.process_job_list(jobs, worker_pool_args)
 
@@ -87,7 +87,9 @@ class CPTVFileProcessor:
 
         if self.workers_threads == 0:
             # just process the jobs in the main thread
-            for job in jobs: process_job(job)
+            for job in jobs: 
+                print('processing',job[1])
+                process_job(job)
         else:
             # send the jobs to a worker pool
             pool = multiprocessing.Pool(self.workers_threads, initializer=self.worker_pool_init, initargs=worker_pool_args)

@@ -24,6 +24,7 @@ from ml_tools.tools import Rectangle
 from ml_tools.trackdatabase import TrackDatabase
 from ml_tools import tools
 from ml_tools.dataset import TrackChannels
+from memory_profiler import profile
 
 from cptv import CPTVReader
 
@@ -456,12 +457,14 @@ class TrackExtractor:
         """
         Loads a cptv file, and prepares for track extraction.
         """
+        print("loadinging " + filename)
         self.source_file = filename
         self.reader = CPTVReader(open(filename, 'rb'))
         local_tz = pytz.timezone('Pacific/Auckland')
         self.video_start_time = self.reader.timestamp.astimezone(local_tz)
         self.stats.update(self.get_video_stats())
 
+    @profile
     def extract_tracks(self):
         """
         Extracts tracks from given source.  Setting self.tracks to a list of good tracks within the clip
@@ -474,7 +477,7 @@ class TrackExtractor:
         self.reject_reason = None
 
         # we need to load the entire video so we can analyse the background.
-        frames = [frame for frame, offset in self.reader]
+        frames = [frame.pix for frame in self.reader]
         self.frame_buffer.thermal = frames
 
         # first we get the background.  This requires reading the entire source into memory.
@@ -651,7 +654,8 @@ class TrackExtractor:
 
         thermal = get_image_subsection(self.frame_buffer.thermal[tracker_frame], bounds)
         filtered = get_image_subsection(self.frame_buffer.filtered[tracker_frame], bounds)
-        flow = get_image_subsection(self.frame_buffer.flow[tracker_frame], bounds)
+        flow = filtered
+        # get_image_subsection(self.frame_buffer.flow[tracker_frame], bounds)
         mask = get_image_subsection(self.frame_buffer.mask[tracker_frame], bounds)
 
         # make sure only our pixels are included in the mask.
@@ -660,7 +664,7 @@ class TrackExtractor:
 
         # stack together into a numpy array.
         # by using int16 we loose a little precision on the filtered frames, but not much (only 1 bit)
-        frame = np.int16(np.stack((thermal, filtered, flow[:, :, 0], flow[:, :, 1], mask), axis=0))
+        frame = np.int16(np.stack((thermal, filtered,flow, flow, mask), axis=0))
 
         return frame
 
