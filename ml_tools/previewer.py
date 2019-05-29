@@ -1,5 +1,6 @@
 import logging
 from os import path
+from memory_profiler import profile
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -84,6 +85,7 @@ class Previewer:
             )
         return globs._previewer_font_title
 
+    @profile
     def export_clip_preview(
         self, filename, tracker: TrackExtractor, track_predictions=None
     ):

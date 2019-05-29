@@ -2,14 +2,14 @@ import argparse
 import os
 import logging
 from datetime import datetime
-
+from memory_profiler import profile
 from ml_tools.logs import init_logging
 from ml_tools import tools
 from ml_tools.config import Config
 from ml_tools.previewer import Previewer
 from .clipclassifier import ClipClassifier
-
-
+from .clipclassifier import get_size
+@profile
 def main():
     parser = argparse.ArgumentParser()
 
@@ -93,7 +93,6 @@ def main():
         clip_classifier.process_file(source_file)
     else:
         clip_classifier.process_folder(os.path.join(config.source_folder, args.source))
-
 
 if __name__ == "__main__":
     main()

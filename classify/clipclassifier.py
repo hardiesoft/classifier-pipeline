@@ -2,7 +2,9 @@ import json
 import logging
 import os.path
 import time
+import sys
 from typing import Dict
+from memory_profiler import profile
 
 from datetime import datetime, timedelta
 import numpy as np
@@ -80,7 +82,8 @@ class ClipClassifier(CPTVFileProcessor):
         prediction = 0.0
         novelty = 0.0
 
-        fp_index = self.classifier.labels.index("false-positive")
+        fp_index = None
+        # self.classifier.labels.index("false-positive")
 
         # go through making clas sifications at each frame
         # note: we should probably be doing this every 9 frames or so.
@@ -111,7 +114,7 @@ class ClipClassifier(CPTVFileProcessor):
 
                 # make false-positive prediction less strong so if track has dead footage it won't dominate a strong
                 # score
-                prediction[fp_index] *= 0.8
+                # prediction[fp_index] *= 0.8
 
                 # a little weight decay helps the model not lock into an initial impression.
                 # 0.98 represents a half life of around 3 seconds.
@@ -148,6 +151,7 @@ class ClipClassifier(CPTVFileProcessor):
             predictions.append(smooth_prediction)
             novelties.append(smooth_novelty)
 
+        # self.classifier = None
         return TrackPrediction(predictions, novelties)
 
     @property
@@ -254,6 +258,7 @@ class ClipClassifier(CPTVFileProcessor):
                 if folder not in self.config.excluded_folders:
                     self.process_folder(os.path.join(root, folder), tag=folder.lower())
 
+    @profile
     def process_file(self, filename, **kwargs):
         """
         Process a file extracting tracks and identifying them.
@@ -267,14 +272,19 @@ class ClipClassifier(CPTVFileProcessor):
         logging.info("Processing file '{}'".format(filename))
 
         start = time.time()
-
+        # get_size("clipclassifier",self)
         tracker = TrackExtractor(self.tracker_config)
         tracker.load(filename)
+        print(f"{len(tracker.frame_buffer.thermal)} thermal len frame shape is {tracker.frame_buffer.thermal[0].shape} type {type(tracker.frame_buffer.thermal[0][0][0])} size of {sys.getsizeof(tracker.frame_buffer.thermal[0])}")
+        # get_size("tracker",tracker)
 
         tracker.extract_tracks()
+        print(f"{len(tracker.frame_buffer.filtered)} filtered len frame shape is {tracker.frame_buffer.filtered[0].shape} type {type(tracker.frame_buffer.filtered[0][0][0])}size of {sys.getsizeof(tracker.frame_buffer.filtered[0])}")
 
+        # get_size("tracker",tracker)
         if len(tracker.tracks) > 0:
             tracker.generate_optical_flow()
+        # get_size("tracker",tracker)
 
         classify_name = self.get_classify_filename(filename)
         destination_folder = os.path.dirname(classify_name)
@@ -327,6 +337,7 @@ class ClipClassifier(CPTVFileProcessor):
             )
             logging.info("Took {:.1f}ms per frame".format(ms_per_frame))
 
+
     def save_metadata(self, filename, meta_filename, tracker):
         # read in original metadata
         meta_data = self.get_meta_data(filename)
@@ -378,3 +389,29 @@ class ClipClassifier(CPTVFileProcessor):
         else:
             with open(meta_filename, "w") as f:
                 json.dump(save_file, f, indent=4, cls=tools.CustomJSONEncoder)
+
+def get_size(name, obj, seen=None, depth = 0, parent_name=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(key, value, seen, depth+1, name) for key, value in obj.items()])
+        size += sum([get_size(key, key, seen, depth+1, name) for key, value in obj.items()])
+    if hasattr(obj, '__dict__'):
+        seen.add(id(obj.__dict__))
+        size += sum([get_size(key, value, seen, depth+1, name) for key, value in obj.__dict__.items()])
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(name, i, seen, depth+1) for i in obj])
+
+    size_in_mb = size/1000000
+
+    if size_in_mb > 0 and depth <= 2:
+        print("size of {} is {}MB parent {}".format(name,size_in_mb,parent_name))
+    return size

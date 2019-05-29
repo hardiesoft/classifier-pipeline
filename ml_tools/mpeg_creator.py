@@ -1,7 +1,7 @@
 import locale
 import os
 import subprocess
-
+import sys
 
 class MPEGCreator:
     """
@@ -63,6 +63,7 @@ class MPEGCreator:
         buf = self._ffmpeg.stdout.read()
         if buf:
             self._output.append(buf)
+            print(f"collect_output {sys.getsizeof(buf)}")
 
 
 def get_ffmpeg_command(filename, width, height, quality=21):

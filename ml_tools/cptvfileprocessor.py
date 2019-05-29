@@ -1,8 +1,12 @@
 import logging
 import multiprocessing
 import os
+import sys
 import time
 import traceback
+from memory_profiler import profile
+import objgraph
+import ml_tools.globals as globs
 
 
 def process_job(job):
@@ -63,9 +67,7 @@ class CPTVFileProcessor:
                 "Warning - folder {} does not exist anymore".format(folder_path)
             )
             return
-
         logging.info("processing %s", folder_path)
-
         jobs = []
         for file_name in os.listdir(folder_path):
             full_path = os.path.join(folder_path, file_name)
@@ -77,7 +79,8 @@ class CPTVFileProcessor:
                     jobs.append((self, full_path, kwargs))
 
         self.process_job_list(jobs, worker_pool_args)
-
+        
+    @profile
     def process_job_list(self, jobs, worker_pool_args=None):
         """
         Processes a list of jobs. Supports worker threads.
@@ -110,6 +113,7 @@ class CPTVFileProcessor:
             else:
                 pool.close()
 
+
     def log_message(self, message):
         """ Record message in stdout.  Will be printed if verbose is enabled. """
         # note, python has really good logging... I should probably make use of this.
@@ -126,3 +130,29 @@ if __name__ == "__main__":
     # for some reason the fork method seems to memory leak, and unix defaults to this so we
     # stick to spawn.  Also, form might be a problem as some numpy commands have multiple threads?
     multiprocessing.set_start_method("spawn")
+
+def get_size(name, obj, seen=None, depth = 0, parent_name=None):
+    """Recursively finds size of objects"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(key, value, seen, depth+1, name) for key, value in obj.items()])
+        size += sum([get_size(key, key, seen, depth+1, name) for key, value in obj.items()])
+    if hasattr(obj, '__dict__'):
+        seen.add(id(obj.__dict__))
+        size += sum([get_size(key, value, seen, depth+1, name) for key, value in obj.__dict__.items()])
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(name, i, seen, depth+1) for i in obj])
+
+    size_in_mb = size/1000000
+
+    if size_in_mb > 0 and depth <= 2:
+        print("size of {} is {}MB parent {}".format(name,size_in_mb,parent_name))
+    return size

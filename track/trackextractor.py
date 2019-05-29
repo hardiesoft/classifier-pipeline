@@ -19,13 +19,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 import pytz
 import datetime
 import os
-
+import sys
 import numpy as np
 import cv2
 import logging
-
+from memory_profiler import profile
+import objgraph
 from ml_tools.tools import Rectangle
-
+import gc
 from track.track import Track
 from track.region import Region
 from track.framebuffer import FrameBuffer
@@ -118,7 +119,7 @@ class TrackExtractor:
             self.preview_secs = reader.preview_secs
             self.stats.update(self.get_video_stats())
             # we need to load the entire video so we can analyse the background.
-            frames = [frame.pix for frame in reader]
+            frames = [np.float32(frame.pix) for frame in reader]
             self.frame_buffer.thermal = frames
             edge = self.config.edge_pixels
             self.crop_rectangle = Rectangle(
@@ -203,7 +204,6 @@ class TrackExtractor:
         for frame in frames:
             self.track_next_frame(frame, background)
             self.frame_on += 1
-
         # filter out tracks that do not move, or look like noise
         self.filter_tracks()
 
@@ -212,7 +212,6 @@ class TrackExtractor:
             frame_height, frame_width = frames[0].shape
             for track in self.tracks:
                 track.smooth(Rectangle(0, 0, frame_width, frame_height))
-
         return True
 
     def calculate_preview(self, frame_list):
@@ -246,7 +245,7 @@ class TrackExtractor:
             filtered[filtered < self.config.temp_thresh] = 0
             filtered = filtered - background - avg_change
         else:
-            background = np.float32(background)
+            background = background
             filtered = thermal - background
             filtered[filtered < 0] = 0
             filtered = filtered - np.median(filtered)
@@ -261,11 +260,15 @@ class TrackExtractor:
             If specified background subtraction algorithm will be used.
         """
 
-        thermal = np.float32(thermal)
+        thermal = thermal
         filtered = self.get_filtered(thermal, background)
 
         regions, mask = self.get_regions_of_interest(filtered, self._prev_filtered)
-
+        # print("regions")
+        # objgraph.show_growth()
+        # gc.collect(2)
+        # print("regions: " + str(sys.getsizeof(regions)/1000000.0))
+        # print("mask: " + str(sys.getsizeof(mask)/1000000.0))
         # save frame stats
         self.frame_stats_min.append(np.min(thermal))
         self.frame_stats_max.append(np.max(thermal))
@@ -280,7 +283,7 @@ class TrackExtractor:
 
         self.apply_matchings(regions)
         # do we need to copy?
-        self._prev_filtered = filtered.copy()
+        self._prev_filtered = filtered
 
     def get_track_channels(self, track: Track, frame_number):
         """
@@ -319,6 +322,7 @@ class TrackExtractor:
 
         # stack together into a numpy array.
         # by using int16 we loose a little precision on the filtered frames, but not much (only 1 bit)
+        # frame = np.int16(np.stack((thermal, filtered, flow, flow, mask), axis=0))
         frame = np.int16(
             np.stack((thermal, filtered, flow[:, :, 0], flow[:, :, 1], mask), axis=0)
         )
@@ -501,7 +505,7 @@ class TrackExtractor:
         # get frames change
         if prev_filtered is not None:
             # we need a lot of precision because the values are squared.  Float32 should work.
-            delta_frame = np.abs(np.float32(filtered) - np.float32(prev_filtered))
+            delta_frame = filtered - prev_filtered
         else:
             delta_frame = None
 
@@ -511,8 +515,8 @@ class TrackExtractor:
         thresh = np.uint8(
             blur_and_return_as_mask(edgeless_filtered, threshold=self.threshold)
         )
+        # thresh = edgeless_filtered
         dilated = thresh
-
         # Dilation groups interested pixels that are near to each other into one component(animal/track)
         if self.config.dilation_pixels > 0:
             size = self.config.dilation_pixels * 2 + 1
@@ -643,7 +647,7 @@ class TrackExtractor:
         # note: unfortunately this must be done before any other processing, which breaks the streaming architecture
         # for this reason we must return all the frames so they can be reused
 
-        frames = np.float32(frames)
+        frames = frames
         background = np.percentile(frames, q=10, axis=0)
         filtered = np.float32(
             [self.get_filtered(frame, background) for frame in frames]
@@ -707,7 +711,7 @@ def blur_and_return_as_mask(frame, threshold):
     Any pixels more than the threshold are set 1, all others are set to 0.
     A blur is also applied as a filtering step
     """
-    thresh = cv2.GaussianBlur(np.float32(frame), (5, 5), 0) - threshold
+    thresh = cv2.GaussianBlur(frame, (5, 5), 0) - threshold
     thresh[thresh < 0] = 0
     thresh[thresh > 0] = 1
     return thresh
