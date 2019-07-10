@@ -1,0 +1,413 @@
+{
+  "Recordings": [
+    {
+      "id": 306936,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/5e/20190513-085611-ospri10.cptv",
+      "DeviceId": 421,
+      "GroupId": 33,
+      "Group": {
+        "groupname": "ospri"
+      },
+      "Tracks": [
+        {
+          "opt_start": 0,
+          "opt_end": 11,
+          "start_s": 0,
+          "end_s": 8.56,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 15,
+          "opt_end": 17,
+          "start_s": 15,
+          "end_s": 17,
+          "expected": false,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 300116,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/5d/20190509-081514-ospri10.cptv",
+      "DeviceId": 421,
+      "GroupId": 33,
+      "Group": {
+        "groupname": "ospri"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 4,
+          "start_s": 1,
+          "end_s": 2.89,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 13.89,
+          "opt_end": 52.67,
+          "start_s": 13.89,
+          "end_s": 52.67,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 255478,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/98/20190228-135525-akaroa24.cptv",
+      "DeviceId": 492,
+      "GroupId": 18,
+      "Group": {
+        "groupname": "akaroa01"
+      },
+      "Tracks": [
+      	{
+          "opt_start": 0,
+          "opt_end": 40,
+          "start_s": 0,
+          "end_s": 40,
+          "tag": "hedgehog"
+        }
+	  ]
+    },
+    {
+      "id": 306078,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/66/20190520-150020-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1.22,
+          "opt_end": 1.33,
+          "start_s": 1.22,
+          "end_s": 1.33,
+          "tag":"rat"
+        },
+        {
+          "opt_start": 0,
+          "opt_end": 50.67,
+          "start_s": 2.89,
+          "end_s": 50.67,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 18.56,
+          "opt_end": 26.78,
+          "start_s": 18.56,
+          "end_s": 25.78,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 27.89,
+          "opt_end": 39.44,
+          "start_s": 27.89,
+          "end_s": 39.44,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 51,
+          "opt_end": 52.33,
+          "start_s": 51,
+          "end_s": 52.33,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 62.78,
+          "opt_end": 65.78,
+          "start_s": 62.78,
+          "end_s": 65.78,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 68.44,
+          "opt_end": 68.67,
+          "start_s": 68.44,
+          "end_s": 68.67,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 330165,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/cb/20190701-165145-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 7.22,
+          "start_s": 1,
+          "end_s": 7.22,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 10.89,
+          "opt_end": 29.11,
+          "start_s": 10.89,
+          "end_s": 29.11,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 31.56,
+          "opt_end": 33.33,
+          "start_s": 31.56,
+          "end_s": 33.33,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 38.44,
+          "opt_end": 49.67,
+          "start_s": 38.44,
+          "end_s": 49.67,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 51.78,
+          "opt_end": 55.89,
+          "start_s": 51.78,
+          "end_s": 55.89,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 59.44,
+          "opt_end": 63.78,
+          "start_s": 59.44,
+          "end_s": 63.78,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 65.11,
+          "opt_end": 71.11,
+          "start_s": 65.11,
+          "end_s": 71.11,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 312282,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/6a/20190530-104343-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 116.44,
+          "start_s": 1,
+          "end_s": 116.44,
+          "tag": "cat"
+        }
+      ]
+    },
+    {
+      "id": 306938,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/97/20190515-104636-ospri10.cptv",
+      "DeviceId": 421,
+      "GroupId": 33,
+      "Group": {
+        "groupname": "ospri"
+      },
+      "Tracks": [
+        {
+          "opt_start": 0,
+          "opt_end": 2.67,
+          "start_s": 0,
+          "end_s": 2.67,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 318351,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/5b/20190610-080139-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 90.56,
+          "start_s": 1,
+          "end_s": 90.56,
+          "tag": "cat"
+        }
+      ]
+    },
+    {
+      "id": 300588,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/9f/20190510-125920-ospri03.cptv",
+      "DeviceId": 423,
+      "GroupId": 33,
+      "Group": {
+        "groupname": "ospri"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 50.89,
+          "start_s": 1,
+          "end_s": 50.89,
+          "tag": "possum"
+        },
+        {
+          "opt_start": 23.78,
+          "opt_end": 24.89,
+          "start_s": 23.78,
+          "end_s": 39.89,
+          "tag": "possum"
+        },
+        {
+          "opt_start": 33.56,
+          "opt_end": 67.67,
+          "start_s": 33.56,
+          "end_s": 67.67,
+          "expected": false,
+          "tag": "possum"
+        }
+      ]
+    },
+    {
+      "id": 219203,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/79/20181229-152232-akaroa24.cptv",
+      "DeviceId": 492,
+      "GroupId": 18,
+      "Group": {
+        "groupname": "akaroa01"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1.00,
+          "opt_end": 58.00,
+          "start_s": 1.00,
+          "end_s": 58.00,
+          "tag": "hedgehog"
+        }
+      ]
+    },
+    {
+      "id": 306939,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/fa/20190515-112724-ospri10.cptv",
+      "DeviceId": 421,
+      "GroupId": 33,
+      "Group": {
+        "groupname": "ospri"
+      },
+      "Tracks": [
+        {
+          "opt_start": 0.78,
+          "opt_end": 21.56,
+          "start_s": 0.78,
+          "end_s": 21.56,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 254677,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/63/20190226-130028-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1,
+          "opt_end": 12.00,
+          "start_s": 1,
+          "end_s": 12.00,
+          "tag": "rat"
+        },
+        {
+          "opt_start": 13.00,
+          "opt_end": 18.00,
+          "start_s": 13.00,
+          "end_s": 18.00,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 319577,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/dd/20190612-112122-akaroa24.cptv",
+      "DeviceId": 492,
+      "GroupId": 18,
+      "Group": {
+        "groupname": "akaroa01"
+      },
+      "Tracks": [
+        {
+          "opt_start": 0.56,
+          "opt_end": 16.11,
+          "start_s": 0.56,
+          "end_s": 16.11,
+          "tag": "possum"
+        }
+      ]
+    },
+    {
+      "id": 330010,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/ca/20190701-102127-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+        {
+          "opt_start": 1.11,
+          "opt_end": 36.33,
+          "start_s": 1.11,
+          "end_s": 36.33,
+          "tag": "rat"
+        }
+      ]
+    },
+    {
+      "id": 320522,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/55/20190614-064810-akaroa24.cptv",
+      "DeviceId": 492,
+      "GroupId": 18,
+      "Group": {
+        "groupname": "akaroa01"
+      },
+      "Tracks": [
+        {
+          "opt_start": 0.89,
+          "opt_end": 8.78,
+          "start_s": 0.89,
+          "end_s": 8.78,
+          "tag": "cat"
+        }
+      ]
+    },
+    {
+      "id": 255338,
+      "filename": "/home/zaza/Cacophony/cptv-download/cptv-dl/2b/20190228-074351-davidblake02.cptv",
+      "DeviceId": 400,
+      "GroupId": 26,
+      "Group": {
+        "groupname": "davidblake"
+      },
+      "Tracks": [
+      	{
+          "opt_start": 1.5,
+          "opt_end": 12,
+          "start_s": 1.5,
+          "end_s": 12,
+          "tag": "hedgehog"
+        }
+      ]
+    }
+  ]
+}
