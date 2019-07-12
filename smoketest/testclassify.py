@@ -73,37 +73,10 @@ class TestClassify:
         with open("smoketest-results.json", "w") as outfile:
             json.dump(result, outfile, indent=2, default=convert_to_dict)
 
-    def easy_results(self, results):
-        recordings = []
-        for result in results:
-            recordings.append(self.easy_result(result))
-
-    def easy_result(self, result):
-        recording = {}
-        meta = result["cptv_meta"]
-        recording["id"] = meta["id"]
-        recording["filename"] = result["source"]
-        recording["DeviceId"] = meta["DeviceId"]
-        recording["GroupId"] = meta["GroupId"]
-        recording["Group"] = meta["Group"]
-        recording["Tracks"] = []
-        for track in meta["Tracks"]:
-            new_track = {}
-            new_track["opt_start"] = track["data"]["start_s"]
-            new_track["opt_end"] = track["data"]["end_s"]
-            new_track["start_s"] = track["data"]["start_s"]
-            new_track["end_s"] = track["data"]["end_s"]
-            new_track["tag"] = track["data"].get("tag","")
-            recording["Tracks"].append(new_track)
-
-        recording["Tracks"] = sorted(recording["Tracks"], key=lambda x: x["start_s"])
-        return recording
-
     def TestSet(self):
         config = testconfig.TestConfig().load_config()
         tests = self.load_test(config)
         classify_results = []
-        # tests = [tests[0]]
         output_results = []
         for test in tests:
             result = self.run_classify_on_test(test, config)
@@ -122,7 +95,7 @@ class TestClassify:
                 [res for res in result.get("matches", []) if res.improvement < 0]
             )
             print(
-                "{} matches {} mismatches {} unmatched {} matches improved {} matches worsened {}".format(
+                "{} {}-matches {}-mismatches {}-unmatched {}-matches {}-improved  {}-matches worsened".format(
                     result["filename"],
                     len(result.get("matches", [])),
                     len(result.get("mismatches", [])),
@@ -134,7 +107,7 @@ class TestClassify:
 
     def compare_output(self, expected, result):
         file = Path(expected["filename"])
-        result = self.easy_result(result)
+        result = easy_result(result)
         got_tracks = result["Tracks"]
         expected_tracks = sorted(expected["Tracks"], key=lambda x: x["start_s"])
         expected_tracks = [
@@ -142,7 +115,7 @@ class TestClassify:
         ]
 
         for i, track in enumerate(got_tracks):
-            if len(expected_tracks) >= i:
+            if len(expected_tracks) > i:
                 expected = expected_tracks[i]
                 match = Match.new_match(expected, track)
                 if match.match:
@@ -199,6 +172,75 @@ class TestClassify:
         with open(confifg.test_json) as file:
             meta = json.load(file)
         return meta["Recordings"]
+
+
+def easy_results(results):
+    recordings = []
+    for result in results:
+        recordings.append(easy_result(result))
+
+
+def easy_result(result, ai_tag=True, tag_precedence=None):
+    recording = {}
+    meta = result["cptv_meta"]
+    recording["id"] = meta["id"]
+    recording["filename"] = result["source"]
+    recording["DeviceId"] = meta["DeviceId"]
+    recording["GroupId"] = meta["GroupId"]
+    recording["Group"] = meta["Group"]
+    recording["Tracks"] = []
+    for track in meta["Tracks"]:
+        new_track = {}
+        new_track["opt_start"] = track["data"]["start_s"]
+        new_track["opt_end"] = track["data"]["end_s"]
+        new_track["start_s"] = track["data"]["start_s"]
+        new_track["end_s"] = track["data"]["end_s"]
+        if ai_tag:
+            new_track["tag"] = track["data"].get("tag", "")
+        else:
+            tag = get_best_tag(track, tag_precedence=tag_precedence)
+            if tag:
+                new_track["tag"] = tag["what"]
+        recording["Tracks"].append(new_track)
+
+    recording["Tracks"] = sorted(recording["Tracks"], key=lambda x: x["start_s"])
+    return recording
+
+
+def get_best_tag(track_meta, tag_precedence, min_confidence=-1):
+    """ returns highest precidence non AI tag from the metadata """
+
+    track_tags = track_meta.get("TrackTags", [])
+    track_tags = [tag for tag in track_tags if tag.get("confidence") > min_confidence]
+
+    if not track_tags:
+        return None
+
+    tag = None
+    default_prec = tag_precedence.get("default", 100)
+    best = None
+    for track_tag in track_tags:
+        ranking = tag_ranking(track_tag, default_prec, tag_precedence)
+
+        # if 2 track_tags have same confidence ignore both
+        if ranking == best:
+            tag = None
+        elif best is None or ranking < best:
+            best = ranking
+            tag = track_tag
+    return tag
+
+
+def tag_ranking(track_tag, default_prec, tag_precedence):
+    """ returns a ranking of tags based of what they are and confidence """
+
+    what = track_tag.get("what")
+    confidence = 1 - track_tag.get("confidence", 0)
+    automatic = track_tag["automatic"]
+    prec = tag_precedence.get(what, default_prec) * 10
+    if automatic:
+        prec = prec + 5
+    return prec + confidence
 
 
 def main():
