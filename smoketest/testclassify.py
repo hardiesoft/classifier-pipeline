@@ -95,7 +95,7 @@ class TestClassify:
                 [res for res in result.get("matches", []) if res.improvement < 0]
             )
             print(
-                "{} {}-matches {}-mismatches {}-unmatched {}-matches {}-improved  {}-matches worsened".format(
+                "{} {}-matches {}-mismatches {}-unmatched {}-improved  {}-matches worsened".format(
                     result["filename"],
                     len(result.get("matches", [])),
                     len(result.get("mismatches", [])),
