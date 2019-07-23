@@ -16,8 +16,12 @@ class TrackPrediction:
         """
         self.prediction_history = prediction_history.copy()
         self.novelty_history = novelty_history.copy()
-        self.class_best_score = np.max(np.float32(prediction_history), axis=0).tolist()
-
+        if self.prediction_history:
+            self.class_best_score = np.max(
+                np.float32(prediction_history), axis=0
+            ).tolist()
+        else:
+            self.class_best_score=[]
     def label(self, n=1):
         """ class label of nth best guess. """
         return int(np.argsort(self.class_best_score)[-n])
@@ -34,6 +38,8 @@ class TrackPrediction:
 
     def score(self, n=1):
         """ class score of nth best guess. """
+        if len(self.class_best_score)==0:
+            return 0
         return float(sorted(self.class_best_score)[-n])
 
     def label_at_time(self, frame_number, n=1):

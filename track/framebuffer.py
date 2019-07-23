@@ -83,6 +83,9 @@ class FrameBuffer:
             self.prev_frame = frame
             self.frame_number += 1
         else:
+            frame = Frame(thermal, filtered, mask, self.frame_number)
+            self.prev_frame = frame
+            self.thermal.append(thermal)
             self.filtered.append(filtered)
             self.mask.append(mask)
 
@@ -126,6 +129,8 @@ class FrameBuffer:
         thermal = self.thermal[frame_number]
         filtered = self.filtered[frame_number]
         mask = self.mask[frame_number]
+        return [thermal, filtered, filtered.copy(), filtered.copy(), mask]
+
         if self.flow:
             flow = self.flow[frame_number]
             return [thermal, filtered, flow[:, :, 0], flow[:, :, 1], mask]

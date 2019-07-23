@@ -9,7 +9,6 @@ from ml_tools import tools
 from ml_tools.config import Config
 from ml_tools.previewer import Previewer
 
-
 def main():
     parser = argparse.ArgumentParser()
 

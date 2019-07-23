@@ -128,6 +128,34 @@ class TrackExtractor:
                 reader.y_resolution - 2 * edge,
             )
 
+    def extract_tracks_from_frame(self, frame, background):
+        if self.frame_buffer is None:
+            self.frame_buffer = FrameBuffer("XD", None, False)
+            edge = self.config.edge_pixels
+            frame_height, frame_width = frame.shape
+
+            self.crop_rectangle = Rectangle(
+                edge, edge, frame_width - 2 * edge, frame_height - 2 * edge
+            )
+        self.reject_reason = None
+        self.background_is_preview = True
+
+
+        # reset the track ID so we start at 1
+        Track._track_id = 1
+
+        # process each frame:
+        self.track_next_frame(frame, background)
+        self.frame_on += 1
+
+        # filter out tracks that do not move, or look like noise
+        # self.filter_tracks()
+        self.stats["temp_thresh"] = self.config.temp_thresh
+        self.stats["max_temp"] = max(self.stats.get("max_temp", 0), np.amax(frame))
+        self.stats["min_temp"] = min(self.stats.get("min_temp",10000), np.amin(frame))
+
+        return True
+
     def extract_tracks(self):
         """
         Extracts tracks from given source.  Setting self.tracks to a list of good tracks within the clip
@@ -508,7 +536,6 @@ class TrackExtractor:
             dilated = cv2.dilate(dilated, kernel, iterations=1)
 
         labels, small_mask, stats, _ = cv2.connectedComponentsWithStats(dilated)
-
         # make mask go back to full frame size without edges chopped
         edge = self.config.edge_pixels
         mask = np.zeros(filtered.shape, dtype=np.int32)
@@ -530,6 +557,7 @@ class TrackExtractor:
                 i,
                 self.frame_on,
             )
+            print(region)
             # want the real mass calculated from before the dilation
             region.mass = np.sum(region.subimage(thresh))
 

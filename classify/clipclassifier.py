@@ -21,6 +21,8 @@ from track.trackextractor import TrackExtractor
 class ClipClassifier(CPTVFileProcessor):
     """ Classifies tracks within CPTV files. """
 
+    input_state = None
+
     # skips every nth frame.  Speeds things up a little, but reduces prediction quality.
     FRAME_SKIP = 1
 
@@ -86,7 +88,7 @@ class ClipClassifier(CPTVFileProcessor):
 
         # go through making clas sifications at each frame
         # note: we should probably be doing this every 9 frames or so.
-        state = None
+        # state = None
 
         for i in range(len(track)):
             frame_number = track.start_frame + i
@@ -108,7 +110,6 @@ class ClipClassifier(CPTVFileProcessor):
                 prediction, novelty, state = self.classifier.classify_frame_with_novelty(
                     frame, state
                 )
-
                 # make false-positive prediction less strong so if track has dead footage it won't dominate a strong
                 # score
                 if fp_index is not None:
@@ -131,6 +132,111 @@ class ClipClassifier(CPTVFileProcessor):
                 cropped_weight = 0.7 if track.bounds_history[i].was_cropped else 1.0
 
                 prediction *= mass_weight * cropped_weight
+
+            if smooth_prediction is None:
+                if UNIFORM_PRIOR:
+                    smooth_prediction = np.ones([num_labels]) * (1 / num_labels)
+                else:
+                    smooth_prediction = prediction
+                smooth_novelty = 0.5
+            else:
+                smooth_prediction = (
+                    1 - prediction_smooth
+                ) * smooth_prediction + prediction_smooth * prediction
+                smooth_novelty = (
+                    1 - prediction_smooth
+                ) * smooth_novelty + prediction_smooth * novelty
+
+            predictions.append(smooth_prediction)
+            novelties.append(smooth_novelty)
+
+        return TrackPrediction(predictions, novelties)
+
+    def identify_frame(self, frame, regions):
+        """
+        Runs through track identifying segments, and then returns it's prediction of what kind of animal this is.
+        One prediction will be made for every frame.
+        :param track: the track to identify.
+        :return: TrackPrediction object
+        """
+
+        # uniform prior stats start with uniform distribution.  This is the safest bet, but means that
+        # it takes a while to make predictions.  When off the first prediction is used instead causing
+        # faster, but potentially more unstable predictions.
+        UNIFORM_PRIOR = False
+
+        predictions = []
+        novelties = []
+
+        num_labels = len(self.classifier.labels)
+        prediction_smooth = 0.1
+
+        smooth_prediction = None
+        smooth_novelty = None
+
+        prediction = 0.0
+        novelty = 0.0
+        try:
+            fp_index = self.classifier.labels.index("false-positive")
+        except ValueError:
+            fp_index = None
+        # go through making clas sifications at each frame
+        # note: we should probably be doing this every 9 frames or so.
+        for bounds in regions:
+            # print(f"region is {bounds} frame {type(frame)}")
+            thermal = bounds.subimage(frame.thermal)
+            filtered = bounds.subimage(frame.filtered)
+            mask = bounds.subimage(frame.mask)
+
+            # make sure only our pixels are included in the mask.
+            mask[mask != bounds.id] = 0
+            mask[mask > 0] = 1
+
+            # stack together into a numpy array.
+            # by using int16 we lose a little precision on the filtered frames, but not much (only 1 bit)
+            track_data = np.int16(
+                np.stack(
+                    (thermal, filtered, filtered.copy(), filtered.copy(), mask), axis=0
+                )
+            )
+
+            # note: would be much better for the tracker to store the thermal references as it goes.
+            thermal_reference = np.median(frame.thermal)
+            frames = Preprocessor.apply(
+                [track_data], [thermal_reference], default_inset=0
+            )
+
+            if frames is None:
+                logging.info("Frame of track could not be classified.")
+                return
+
+            # frame = frames[0]
+            prediction, novelty, state = self.classifier.classify_frame_with_novelty(
+                frames[0], ClipClassifier.input_state
+            )
+            print(state.shape)
+            # make false-positive prediction less strong so if track has dead footage it won't dominate a strong
+            # score
+            if fp_index is not None:
+                prediction[fp_index] *= 0.8
+
+            # a little weight decay helps the model not lock into an initial impression.
+            # 0.98 represents a half life of around 3 seconds.
+            state *= 0.98
+            ClipClassifier.input_state = state
+            # precondition on weight,  segments with small mass are weighted less as we can assume the error is
+            # higher here.
+            mass = bounds.mass
+
+            # we use the square-root here as the mass is in units squared.
+            # this effectively means we are giving weight based on the diameter
+            # of the object rather than the mass.
+            mass_weight = np.clip(mass / 20, 0.02, 1.0) ** 0.5
+
+            # cropped frames don't do so well so restrict their score
+            cropped_weight = 0.7 if bounds.was_cropped else 1.0
+
+            prediction *= mass_weight * cropped_weight
 
             if smooth_prediction is None:
                 if UNIFORM_PRIOR:

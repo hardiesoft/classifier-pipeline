@@ -105,7 +105,6 @@ class Previewer:
         mpeg = MPEGCreator(filename)
 
         for frame_number, thermal in enumerate(tracker.frame_buffer.thermal):
-
             if self.preview_type == self.PREVIEW_RAW:
                 image = self.convert_and_resize(thermal)
 
@@ -203,9 +202,9 @@ class Previewer:
 
     def create_track_descriptions(self, tracker, track_predictions):
         # look for any tracks that occur on this frame
-        for _, track in enumerate(tracker.tracks):
+        for i, prediction in enumerate(track_predictions):
 
-            prediction = track_predictions[track]
+            # prediction = track_predictions[0]
             # find a track description, which is the final guess of what this class is.
             guesses = [
                 "{} ({:.1f})".format(
@@ -217,7 +216,7 @@ class Previewer:
             ]
             track_description = "\n".join(guesses)
             track_description.strip()
-            self.track_descs[track] = track_description
+            self.track_descs[i] = track_description
 
     def create_four_tracking_image(self, frame_buffer, frame_number):
         frame = frame_buffer.get_frame(frame_number)
@@ -319,7 +318,7 @@ class Previewer:
         screen_bounds,
         v_offset=0,
     ):
-        prediction = track_predictions[track]
+        prediction = track_predictions[0]
         if track not in track_predictions:
             return
 
@@ -352,7 +351,7 @@ class Previewer:
 
         draw.text(
             (header_rect.x, header_rect.y),
-            self.track_descs[track],
+            self.track_descs[0],
             font=self.font_title,
         )
         draw.text(
@@ -389,8 +388,8 @@ class Previewer:
         return "max {}, min{}, mean{}, back delta {}, avg delta{}, temp_thresh {}".format(
             round(stats["max_temp"], 2),
             round(stats["min_temp"], 2),
-            round(stats["mean_temp"], 2),
-            round(stats["average_background_delta"], 2),
-            round(stats["average_delta"], 2),
-            stats["temp_thresh"],
+            round(stats.get("mean_temp",0), 2),
+            round(stats.get("average_background_delta",0), 2),
+            round(stats.get("average_delta",0), 2),
+            stats.get("temp_thresh",0),
         )
