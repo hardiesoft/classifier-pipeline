@@ -196,7 +196,6 @@ class MotionDetector:
                 ] = self.config.delta_thresh
 
         self.diff_window.add(delta_frame)
-
         if diff > self.config.count_thresh:
             print("motion detected")
             return True

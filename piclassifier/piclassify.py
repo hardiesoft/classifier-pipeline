@@ -1,17 +1,14 @@
 #!/usr/bin/python3
-from datetime import datetime, timedelta
+from datetime import timedelta
 import numpy as np
 import os
 import logging
 import socket
 import time
 import absl.logging
-
+import psutil
 from cptv import Frame
 
-from classify.trackprediction import Predictions
-from load.clip import Clip
-from load.cliptrackextractor import ClipTrackExtractor
 from .telemetry import Telemetry
 from .locationconfig import LocationConfig
 from .thermalconfig import ThermalConfig
@@ -19,33 +16,12 @@ from .motiondetector import MotionDetector
 from .cptvrecorder import CPTVRecorder
 
 from ml_tools.logs import init_logging
-from ml_tools import tools
-from ml_tools.model import Model
-from ml_tools.dataset import Preprocessor, TrackChannels
 from ml_tools.config import Config
 
 
 SOCKET_NAME = "/var/run/lepton-frames"
 VOSPI_DATA_SIZE = 160
 TELEMETRY_PACKET_COUNT = 4
-
-
-def get_classifier(config):
-
-    """
-    Returns a classifier object, which is created on demand.
-    This means if the ClipClassifier is copied to a new process a new Classifier instance will be created.
-    """
-    t0 = datetime.now()
-    logging.info("classifier loading")
-    classifier = Model(
-        train_config=config.train,
-        session=tools.get_session(disable_gpu=not config.use_gpu),
-    )
-    classifier.load(config.classify.model)
-    logging.info("classifier loaded ({})".format(datetime.now() - t0))
-
-    return classifier
 
 
 # Links to socket and continuously waits for 1 connection
@@ -59,23 +35,37 @@ def main():
         if os.path.exists(SOCKET_NAME):
             raise
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    sock.setsockopt(
+        socket.SOL_SOCKET,
+        socket.SO_RCVBUF,
+        400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE,
+    )
+    sock.setsockopt(
+        socket.SOL_SOCKET,
+        socket.SO_SNDBUF,
+        400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE,
+    )
+
     sock.bind(SOCKET_NAME)
     sock.listen(1)
     config = Config.load_from_file()
     thermal_config = ThermalConfig.load_from_file()
     location_config = LocationConfig.load_from_file()
-    classifier = get_classifier(config)
 
-    clip_classifier = PiClassifier(config, thermal_config, location_config, classifier)
+    clip_classifier = PiClassifier(config, thermal_config, location_config)
     while True:
         logging.info("waiting for a connection")
         connection, client_address = sock.accept()
         logging.info("connection from %s", client_address)
         try:
+            start = time.time()
             handle_connection(connection, clip_classifier)
+            # print(psutil.cpu_percent())
+            # print(psutil.virtual_memory())  # physical memory usage
         finally:
             # Clean up the connection
             connection.close()
+            print("took {} seconds".format(time.time() - start))
 
 
 def handle_connection(connection, clip_classifier):
@@ -86,21 +76,37 @@ def handle_connection(connection, clip_classifier):
     thermal_frame = np.empty(
         (clip_classifier.res_y, clip_classifier.res_x), dtype=img_dtype
     )
-    while True:
-        data = connection.recv(400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE)
 
-        if not data:
+    max_cpu = 0
+    max_mem = 0
+    buf = bytearray(400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE)
+    view = memoryview(buf)
+    while True:
+        start_data = time.time()
+        nbytes = connection.recv_into(
+            view, 400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE
+        )
+
+        # data = connection.recv_into(400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE)
+
+        # data = connection.recv(400 * 400 * 2 + TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE)
+        end_data = time.time()
+        print("receiving data took {}".format(1000 * 1000 * (end_data - start_data)))
+        if not nbytes:
             logging.info("disconnected from camera")
             clip_classifier.disconnected()
+            print("max cpu {} max mem {}".format(max_cpu, max_mem))
+            print("total classification {}".format(clip_classifier.total_time))
+
             return
 
-        if len(data) > clip_classifier.res_y * clip_classifier.res_x * 2:
+        if nbytes > clip_classifier.res_y * clip_classifier.res_x * 2:
             telemetry = Telemetry.parse_telemetry(
-                data[: TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE]
+                view[: TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE]
             )
 
             thermal_frame = np.frombuffer(
-                data, dtype=img_dtype, offset=TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE
+                view, dtype=img_dtype, offset=TELEMETRY_PACKET_COUNT * VOSPI_DATA_SIZE
             ).reshape(clip_classifier.res_y, clip_classifier.res_x)
         else:
             telemetry = Telemetry()
@@ -108,26 +114,38 @@ def handle_connection(connection, clip_classifier):
             telemetry.time_on = timedelta(
                 milliseconds=time.time(), seconds=MotionDetector.FFC_PERIOD.seconds + 1
             )
-            thermal_frame = np.frombuffer(data, dtype=img_dtype, offset=0).reshape(
-                clip_classifier.res_y, clip_classifier.res_x
-            )
+            start_data = time.time()
+            thermal_frame = np.frombuffer(
+                view[:nbytes], dtype=img_dtype, offset=0
+            ).reshape(clip_classifier.res_y, clip_classifier.res_x)
 
         # swap from big to little endian
         lepton_frame = Frame(
             thermal_frame.byteswap(), telemetry.time_on, telemetry.last_ffc_time
         )
-        t_max = np.amax(lepton_frame.pix)
-        t_min = np.amin(lepton_frame.pix)
-        if t_max > 10000 or t_min == 0:
-            logging.warning(
-                "received frame has odd values skipping thermal frame max {} thermal frame min {}".format(
-                    t_max, t_min
-                )
-            )
-            # this frame has bad data probably from lack of CPU
-            clip_classifier.skip_frame()
-            continue
+        end_data = time.time()
+        print("parsing data took {}".format(1000 * 1000 * (end_data - start_data)))
+        # t_max = np.amax(lepton_frame.pix)
+        # t_min = np.amin(lepton_frame.pix)
+        # if t_max > 10000 or t_min == 0:
+        #     logging.warning(
+        #         "received frame has odd values skipping thermal frame max {} thermal frame min {}".format(
+        #             t_max, t_min
+        #         )
+        #     )
+        #     # this frame has bad data probably from lack of CPU
+        #     clip_classifier.skip_frame()
+        #     continue
+
         clip_classifier.process_frame(lepton_frame)
+        # max_cpu = max(max_cpu, psutil.cpu_percent())
+        # max_mem = max(max_mem, psutil.virtual_memory()[3])
+
+        # print(
+        #     "cpu {} memory % used {}:".format(
+        #         psutil.cpu_percent(), psutil.virtual_memory()[2]
+        #     )
+        # )
 
 
 class PiClassifier:
@@ -136,217 +154,26 @@ class PiClassifier:
     PROCESS_FRAME = 3
     NUM_CONCURRENT_TRACKS = 1
 
-    def __init__(self, config, thermal_config, location_config, classifier):
-        self.frame_num = 0
-        self.clip = None
-        self.tracking = False
-        self.enable_per_track_information = False
-        self.rolling_track_classify = {}
-
-        self.config = config
-        self.classifier = classifier
-        self.num_labels = len(classifier.labels)
-        self.res_x = self.config.classify.res_x
-        self.res_y = self.config.classify.res_y
-        self.predictions = Predictions(classifier.labels)
-        self.preview_frames = (
-            thermal_config.recorder.preview_secs * thermal_config.recorder.frame_rate
-        )
-        edge = self.config.tracking.edge_pixels
-        self.crop_rectangle = tools.Rectangle(
-            edge, edge, self.res_x - 2 * edge, self.res_y - 2 * edge
-        )
-
-        try:
-            self.fp_index = self.classifier.labels.index("false-positive")
-        except ValueError:
-            self.fp_index = None
-
-        self.track_extractor = ClipTrackExtractor(
-            self.config.tracking,
-            self.config.use_opt_flow,
-            self.config.classify.cache_to_disk,
-            keep_frames=False,
-            calc_stats=False,
-        )
-        self.motion_config = thermal_config.motion
-        self.min_frames = (
-            thermal_config.recorder.min_secs * thermal_config.recorder.frame_rate
-        )
-        self.max_frames = (
-            thermal_config.recorder.max_secs * thermal_config.recorder.frame_rate
-        )
+    def __init__(self, config, thermal_config, location_config):
+        self.res_x = config.classify.res_x
+        self.res_y = config.classify.res_y
+        self.total_time = 0
         self.motion_detector = MotionDetector(
             self.res_x,
             self.res_y,
             thermal_config.motion,
             location_config,
             thermal_config.recorder,
-            self.config.tracking.dynamic_thresh,
+            config.tracking.dynamic_thresh,
             CPTVRecorder(location_config, thermal_config),
         )
-        self.startup_classifier()
-
-    def new_clip(self):
-        self.clip = Clip(
-            self.config.tracking, "stream", self.motion_detector.background
-        )
-        self.clip.video_start_time = datetime.now()
-        self.clip.num_preview_frames = self.preview_frames
-        self.clip.set_res(self.res_x, self.res_y)
-        self.clip.set_frame_buffer(
-            self.config.classify_tracking.high_quality_optical_flow,
-            self.config.classify.cache_to_disk,
-            self.config.use_opt_flow,
-            True,
-        )
-
-        # process preview_frames
-        frames = self.motion_detector.thermal_window.get_frames()
-        for frame in frames:
-            self.track_extractor.process_frame(self.clip, frame.copy())
-
-    def startup_classifier(self):
-        # classifies an empty frame to force loading of the model into memory
-
-        p_frame = np.zeros((5, 48, 48), np.float32)
-        self.classifier.classify_frame_with_novelty(p_frame, None)
-
-    def get_active_tracks(self):
-        """
-        Gets current clips active_tracks and returns the top NUM_CONCURRENT_TRACKS order by priority
-        """
-        active_tracks = self.clip.active_tracks
-        if len(active_tracks) <= PiClassifier.NUM_CONCURRENT_TRACKS:
-            return active_tracks
-        active_predictions = []
-        for track in active_tracks:
-            prediction = self.predictions.get_or_create_prediction(track)
-            active_predictions.append(prediction)
-
-        top_priority = sorted(
-            active_predictions,
-            key=lambda i: i.get_priority(self.clip.frame_on),
-            reverse=True,
-        )
-
-        top_priority = [
-            track.track_id
-            for track in top_priority[: PiClassifier.NUM_CONCURRENT_TRACKS]
-        ]
-        classify_tracks = [
-            track for track in active_tracks if track.get_id() in top_priority
-        ]
-        return classify_tracks
-
-    def identify_last_frame(self):
-        """
-        Runs through track identifying segments, and then returns it's prediction of what kind of animal this is.
-        One prediction will be made for every active_track of the last frame.
-        :return: TrackPrediction object
-        """
-
-        prediction_smooth = 0.1
-
-        smooth_prediction = None
-        smooth_novelty = None
-
-        prediction = 0.0
-        novelty = 0.0
-
-        active_tracks = self.get_active_tracks()
-        frame = self.clip.frame_buffer.get_last_frame()
-        if frame is None:
-            return
-        thermal_reference = np.median(frame.thermal)
-
-        for i, track in enumerate(active_tracks):
-            track_prediction = self.predictions.get_or_create_prediction(track)
-            region = track.bounds_history[-1]
-            if region.frame_number != frame.frame_number:
-                logging.warning("frame doesn't match last frame")
-            else:
-                track_data = track.crop_by_region(frame, region)
-                # we use a tighter cropping here so we disable the default 2 pixel inset
-                frames = Preprocessor.apply(
-                    [track_data], [thermal_reference], default_inset=0
-                )
-                if frames is None:
-                    logging.warning(
-                        "Frame {} of track could not be classified.".format(
-                            region.frame_number
-                        )
-                    )
-                    continue
-
-                p_frame = frames[TrackChannels.thermal]
-                prediction, novelty, state = self.classifier.classify_frame_with_novelty(
-                    p_frame, track_prediction.state
-                )
-                track_prediction.state = state
-
-                if self.fp_index is not None:
-                    prediction[self.fp_index] *= 0.8
-                state *= 0.98
-                mass = region.mass
-                mass_weight = np.clip(mass / 20, 0.02, 1.0) ** 0.5
-                cropped_weight = 0.7 if region.was_cropped else 1.0
-
-                prediction *= mass_weight * cropped_weight
-
-                if smooth_prediction is None:
-                    if track_prediction.uniform_prior:
-                        smooth_prediction = np.ones([self.num_labels]) * (
-                            1 / self.num_labels
-                        )
-                    else:
-                        smooth_prediction = prediction
-                    smooth_novelty = 0.5
-                else:
-                    smooth_prediction = (
-                        1 - prediction_smooth
-                    ) * smooth_prediction + prediction_smooth * prediction
-                    smooth_novelty = (
-                        1 - prediction_smooth
-                    ) * smooth_novelty + prediction_smooth * novelty
-                track_prediction.classified_frame(
-                    self.clip.frame_on, smooth_prediction, smooth_novelty
-                )
-                track_prediction.print_prediction(self.predictions.labels)
 
     def disconnected(self):
-        self.end_clip()
         self.motion_detector.force_stop()
-
-    def skip_frame(self):
-        if self.clip:
-            self.clip.frame_on += 1
 
     def process_frame(self, lepton_frame):
         start = time.time()
         self.motion_detector.process_frame(lepton_frame)
-        if self.motion_detector.recorder.recording:
-            if self.clip is None:
-                self.new_clip()
-            self.track_extractor.process_frame(self.clip, lepton_frame.pix)
-            if self.clip.active_tracks and (
-                self.clip.frame_on % PiClassifier.PROCESS_FRAME == 0
-                or self.clip.frame_on == self.preview_frames
-            ):
-                self.identify_last_frame()
-        elif self.clip is not None:
-            self.end_clip()
-
-        self.frame_num += 1
         end = time.time()
-        timetaken = end - start
-        logging.debug(
-            "fps {}/sec time to process {}ms".format(
-                round(1 / timetaken, 2), round(timetaken * 1000, 2)
-            )
-        )
-
-    def end_clip(self):
-        self.predictions.clear_predictions()
-        self.clip = None
-        self.tracking = False
+        self.total_time += end - start
+        print("Time for a frame is {}us".format(1000 * 1000 * (end - start)))

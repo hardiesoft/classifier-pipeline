@@ -65,7 +65,11 @@ def send_clip(clip, socket):
 def main():
     args = parse_args()
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
-
+    sock.setsockopt(
+        socket.SOL_SOCKET,
+        socket.SO_SNDBUF,
+        400 * 400 * 2 + 200 * 200,
+    )
     try:
         sock.connect(SOCKET_NAME)
         if args.h5:
