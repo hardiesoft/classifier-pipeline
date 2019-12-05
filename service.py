@@ -29,8 +29,10 @@ class Service(object):
         last_frame = self.processor.get_recent_frame()
         if last_frame is None:
             return "Reading from camera has not start yet."
-
-        frame_to_jpg(last_frame, self.processor.output_dir + "/" + SNPASHOT_NAME)
+        clip = self.processor.clip
+        if clip is not None:
+            active_tracks = clip.active_tracks
+        frame_to_jpg(last_frame, self.processor.output_dir + "/" + SNPASHOT_NAME, tracks = active_tracks, self.processor.predictions)
         return "Success"
 
 

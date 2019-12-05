@@ -22,11 +22,13 @@ from matplotlib.colors import LinearSegmentedColormap
 import subprocess
 from PIL import ImageFont
 from PIL import ImageDraw
+import ml_tools.globals as globs
 
 EPISON = 1e-5
 
 LOCAL_RESOURCES = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
 GLOBAL_RESOURCES = "/usr/lib/classifier-pipeline/resources"
+TRACK_COLOURS = [(255, 0, 0), (0, 255, 0), (255, 255, 0), (128, 255, 255)]
 
 
 class Rectangle:
@@ -738,7 +740,14 @@ def get_optical_flow_function(high_quality=False):
 
 
 def frame_to_jpg(
-    frame, filename, colourmap_file=None, f_min=None, f_max=None, img_fmt="PNG"
+    frame,
+    filename,
+    colourmap_file=None,
+    f_min=None,
+    f_max=None,
+    img_fmt="PNG",
+    tracks=None,
+    predictions=None,
 ):
     colourmap = _load_colourmap(colourmap_file)
     if f_min is None:
@@ -746,7 +755,106 @@ def frame_to_jpg(
     if f_max is None:
         f_max = np.amax(frame)
     img = convert_heat_to_img(frame, colourmap, f_min, f_max)
+    if tracks is not None:
+        draw = ImageDraw.Draw(img)
+        screen_bounds = Rectangle(0, 0, img.width, img.height)
+        add_tracks(draw, tracks, predictions, screen_bounds)
     img.save(filename, img_fmt)
+
+
+def add_tracks(draw, tracks, predictions, screen_bounds):
+    for index, track in enumerate(tracks):
+        current_prediction_string = None
+        track_prediction = predictions.prediction_for(track.get_id())
+        if track_prediction:
+            current_prediction_string = track_prediction.get_classified_footer(
+                predictions.labels
+            )
+        add_track(draw, track, index, current_prediction_string, screen_bounds)
+
+
+def add_track(draw, track, index, current_prediction_string, screen_bounds, v_offset=0):
+    region = track.last_bound
+    draw.rectangle(
+        rect_points(region, v_offset),
+        outline=TRACK_COLOURS[index % len(TRACK_COLOURS)],
+    )
+    if current_prediction_string:
+        add_text_to_track(
+            draw, region, screen_bounds, header_text=current_prediction_string
+        )
+
+
+def font_title():
+    """ gets default title font. """
+    if not globs._previewer_font_title:
+        globs._previewer_font_title = ImageFont.truetype(
+            resource_path("Ubuntu-B.ttf"), 14
+        )
+    return globs._previewer_font_title
+
+
+def add_text_to_track(
+    draw,
+    rect,
+    screen_bounds,
+    header_text=None,
+    footer_text=None,
+    v_offset=0,
+    frame_scale=1,
+):
+    font = font_title()
+    header_size = font.getsize(header_text)
+    footer_size = font.getsize(footer_text)
+    # figure out where to draw everything
+    header_rect = Rectangle(
+        rect.left * frame_scale,
+        (v_offset + rect.top) * frame_scale - header_size[1],
+        header_size[0],
+        header_size[1],
+    )
+    footer_center = ((rect.width * frame_scale) - footer_size[0]) / 2
+    footer_rect = Rectangle(
+        rect.left * frame_scale + footer_center,
+        (v_offset + rect.bottom) * frame_scale,
+        footer_size[0],
+        footer_size[1],
+    )
+
+    fit_to_image(header_rect, screen_bounds)
+    fit_to_image(footer_rect, screen_bounds)
+
+    if header_text:
+        draw.text((header_rect.x, header_rect.y), header_text, font=font)
+    if footer_text:
+        draw.text((footer_rect.x, footer_rect.y), footer_text, font=font)
+
+
+def fit_to_image(rect: Rectangle, screen_bounds: Rectangle):
+    """ Modifies rect so that rect is visible within bounds. """
+    if screen_bounds is None:
+        return
+    if rect.left < screen_bounds.left:
+        rect.x = screen_bounds.left
+    if rect.top < screen_bounds.top:
+        rect.y = screen_bounds.top
+
+    if rect.right > screen_bounds.right:
+        rect.x = screen_bounds.right - rect.width
+
+    if rect.bottom > screen_bounds.bottom:
+        rect.y = screen_bounds.bottom - rect.height
+
+
+def rect_points(rect, v_offset=0, h_offset=0, frame_scale=1):
+    s = frame_scale
+    return [
+        s * (rect.left + h_offset),
+        s * (rect.top + v_offset),
+        s * (rect.right + h_offset) - 1,
+        s * (rect.bottom + v_offset) - 1,
+    ]
+    return
 
 
 def _load_colourmap(colourmap_path):
