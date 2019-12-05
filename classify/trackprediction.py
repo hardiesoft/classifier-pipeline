@@ -107,9 +107,10 @@ class TrackPrediction:
             score = ""
             if self.max_score:
                 score = self.max_score * 10
-            return "({:.1f} {})\nnovelty={:.2f}".format(
-                score, labels[self.best_label_index], self.max_novelty
-            )
+            label = ""
+            if self.best_label_index and self.best_label_index < len(labels):
+                label = labels[self.best_label_index]
+            return "({:.1f} {})\nnovelty={:.2f}".format(score, label, self.max_novelty)
         if self.predictions:
             return "({:.1f} {})\nnovelty={:.2f}".format(
                 self.score_at_time(frame_number) * 10,
