@@ -104,8 +104,11 @@ class TrackPrediction:
     def get_classified_footer(self, labels, frame_number=None):
         # self.track_prediction = TrackPrediction(self.predictions, self.novelties)
         if frame_number is None or frame_number >= len(self.novelties):
+            score = ""
+            if self.max_score:
+                score = self.max_score * 10
             return "({:.1f} {})\nnovelty={:.2f}".format(
-                self.max_score * 10, labels[self.best_label_index], self.max_novelty
+                score, labels[self.best_label_index], self.max_novelty
             )
         if self.predictions:
             return "({:.1f} {})\nnovelty={:.2f}".format(
