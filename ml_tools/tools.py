@@ -804,29 +804,31 @@ def add_text_to_track(
     frame_scale=1,
 ):
     font = font_title()
-    header_size = font.getsize(header_text)
-    footer_size = font.getsize(footer_text)
-    # figure out where to draw everything
-    header_rect = Rectangle(
-        rect.left * frame_scale,
-        (v_offset + rect.top) * frame_scale - header_size[1],
-        header_size[0],
-        header_size[1],
-    )
-    footer_center = ((rect.width * frame_scale) - footer_size[0]) / 2
-    footer_rect = Rectangle(
-        rect.left * frame_scale + footer_center,
-        (v_offset + rect.bottom) * frame_scale,
-        footer_size[0],
-        footer_size[1],
-    )
-
-    fit_to_image(header_rect, screen_bounds)
-    fit_to_image(footer_rect, screen_bounds)
-
     if header_text:
+        header_size = font.getsize(header_text)
+
+        # figure out where to draw everything
+        header_rect = Rectangle(
+            rect.left * frame_scale,
+            (v_offset + rect.top) * frame_scale - header_size[1],
+            header_size[0],
+            header_size[1],
+        )
+        fit_to_image(header_rect, screen_bounds)
+
         draw.text((header_rect.x, header_rect.y), header_text, font=font)
     if footer_text:
+        footer_size = font.getsize(footer_text)
+
+        footer_center = ((rect.width * frame_scale) - footer_size[0]) / 2
+        footer_rect = Rectangle(
+            rect.left * frame_scale + footer_center,
+            (v_offset + rect.bottom) * frame_scale,
+            footer_size[0],
+            footer_size[1],
+        )
+        fit_to_image(footer_rect, screen_bounds)
+
         draw.text((footer_rect.x, footer_rect.y), footer_text, font=font)
 
 

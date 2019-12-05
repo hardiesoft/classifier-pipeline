@@ -32,7 +32,7 @@ class Service(object):
         clip = self.processor.clip
         if clip is not None:
             active_tracks = clip.active_tracks
-        frame_to_jpg(last_frame, self.processor.output_dir + "/" + SNPASHOT_NAME, tracks = active_tracks, self.processor.predictions)
+        frame_to_jpg(last_frame, self.processor.output_dir + "/" + SNPASHOT_NAME, tracks = active_tracks, predictions=self.processor.predictions)
         return "Success"
 
 
