@@ -789,7 +789,7 @@ def font_title():
     """ gets default title font. """
     if not globs._previewer_font_title:
         globs._previewer_font_title = ImageFont.truetype(
-            resource_path("Ubuntu-B.ttf"), 14
+            resource_path("Ubuntu-B.ttf"), 7
         )
     return globs._previewer_font_title
 
