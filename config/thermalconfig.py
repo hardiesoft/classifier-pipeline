@@ -7,6 +7,7 @@ import os
 from .locationconfig import LocationConfig
 from .timewindow import RelAbsTime, TimeWindow
 
+
 CONFIG_FILENAME = "config.toml"
 CONFIG_DIRS = [Path(__file__).parent.parent, Path("/etc/cacophony")]
 
