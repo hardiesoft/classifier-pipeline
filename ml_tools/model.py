@@ -11,7 +11,7 @@ import time
 import json
 import io
 from collections import namedtuple
-from sklearn import metrics
+# from sklearn import metrics
 
 from ml_tools import tools
 from ml_tools import visualise

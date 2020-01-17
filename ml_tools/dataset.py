@@ -21,7 +21,7 @@ from bisect import bisect
 import cv2
 import dateutil
 import numpy as np
-import scipy.ndimage
+# import scipy.ndimage
 
 # from load.clip import Clip
 from ml_tools import tools

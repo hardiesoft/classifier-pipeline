@@ -10,7 +10,7 @@ import pickle
 import math
 import matplotlib.pyplot as plt
 import logging
-from sklearn import metrics
+# from sklearn import metrics
 import json
 import dateutil
 import binascii
@@ -134,7 +134,7 @@ class CustomJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def purge(dir, pattern):
+def purge(dir, pattern):    
     for f in glob.glob(os.path.join(dir, pattern)):
         os.remove(os.path.join(dir, f))
 
