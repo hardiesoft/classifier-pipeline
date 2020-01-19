@@ -82,7 +82,7 @@ class CPTVRecorder:
         self.frames += 1
 
     def stop_recording(self):
-        print("start recording")
+        print("stop recording")
         if self.writer is None:
             return
 
