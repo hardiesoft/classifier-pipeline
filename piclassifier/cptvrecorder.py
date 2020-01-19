@@ -54,6 +54,7 @@ class CPTVRecorder:
         self.frames = 0
         self.filename = new_temp_name()
         self.filename = os.path.join(self.output_dir, self.filename)
+        print("start recording")
         return
         f = open(self.filename, "wb")
         self.writer = CPTVWriter(f)
@@ -81,6 +82,7 @@ class CPTVRecorder:
         self.frames += 1
 
     def stop_recording(self):
+        print("start recording")
         if self.writer is None:
             return
 
