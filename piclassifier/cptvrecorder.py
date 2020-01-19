@@ -54,6 +54,7 @@ class CPTVRecorder:
         self.frames = 0
         self.filename = new_temp_name()
         self.filename = os.path.join(self.output_dir, self.filename)
+        return
         f = open(self.filename, "wb")
         self.writer = CPTVWriter(f)
         self.writer.timestamp = datetime.now()
@@ -76,7 +77,7 @@ class CPTVRecorder:
     def write_frame(self, lepton_frame, temp_thresh):
         if self.writer is None:
             self.start_recording(temp_thresh)
-        self.writer.write_frame(lepton_frame)
+        # self.writer.write_frame(lepton_frame)
         self.frames += 1
 
     def stop_recording(self):
