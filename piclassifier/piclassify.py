@@ -145,7 +145,7 @@ def handle_connection(connection, config, thermal_config):
     raw_frame = lepton3.Lepton3(headers)
     frames = 0
     start = time.time()
-
+    num = 100
     while True:
 
         data = connection.recv(
@@ -157,21 +157,21 @@ def handle_connection(connection, config, thermal_config):
             service.quit()
             return
         frames += 1
-        frame = raw_frame.parse(data)
+        # frame = raw_frame.parse(data)
 
-        t_max = np.amax(frame.pix)
-        t_min = np.amin(frame.pix)
-        if t_max > 10000 or t_min == 0:
-            logging.warning(
-                "received frame has odd values skipping thermal frame max {} thermal frame min {} cpu % {} memory % {}".format(
-                    t_max, t_min, psutil.cpu_percent(), psutil.virtual_memory()[2]
-                )
-            )
-            # this frame has bad data probably from lack of CPU
-            processor.skip_frame()
-            continue
-        processor.process_frame(frame)
-        if frames % 10 == 0:
+        # t_max = np.amax(frame.pix)
+        # t_min = np.amin(frame.pix)
+        # if t_max > 10000 or t_min == 0:
+        #     logging.warning(
+        #         "received frame has odd values skipping thermal frame max {} thermal frame min {} cpu % {} memory % {}".format(
+        #             t_max, t_min, psutil.cpu_percent(), psutil.virtual_memory()[2]
+        #         )
+        #     )
+        #     # this frame has bad data probably from lack of CPU
+        #     processor.skip_frame()
+        #     continue
+        # processor.process_frame(frame)
+        if frames % num == 0:
             end = time.time()
-            print("{} to receive and process {}".format(end - start, 10))
+            print("{}ms to receive and process {}".format(1000 *(end - start), num))
             start = time.time()
