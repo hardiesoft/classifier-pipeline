@@ -6,7 +6,7 @@ import logging
 import os
 import psutil
 import socket
-
+import time
 # fixes logging not showing up in tensorflow
 
 from cptv import CPTVReader
@@ -143,8 +143,11 @@ def handle_connection(connection, config, thermal_config):
     service = SnapshotService(processor)
 
     raw_frame = lepton3.Lepton3(headers)
+    frames = 0
+    start = time.time()
 
     while True:
+
         data = connection.recv(
             headers.frame_size + raw_frame.get_telemetry_size(), socket.MSG_WAITALL
         )
@@ -153,7 +156,7 @@ def handle_connection(connection, config, thermal_config):
             processor.disconnected()
             service.quit()
             return
-
+        frames += 1
         frame = raw_frame.parse(data)
 
         t_max = np.amax(frame.pix)
@@ -168,3 +171,7 @@ def handle_connection(connection, config, thermal_config):
             processor.skip_frame()
             continue
         processor.process_frame(frame)
+        if frames % 10 == 0:
+            end = time.time()
+            print("{} to receive and process {}".format(end - start, 10))
+            start = time.time()
