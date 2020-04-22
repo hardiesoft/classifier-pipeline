@@ -61,7 +61,7 @@ def main():
         config.classify.preview = args.preview_type
 
     if args.verbose:
-        config.classify_tracking.verbose = True
+        config.verbose = True
 
     if args.processor_folder:
         config.classify.meta_to_stdout = True
@@ -72,7 +72,7 @@ def main():
     model_file = config.classify.model
     if args.model_file:
         model_file = args.model_file
-    clip_classifier = ClipClassifier(config, config.classify_tracking, model_file)
+    clip_classifier = ClipClassifier(config, model_file)
 
     # parse start and end dates
     if args.start_date:

@@ -11,6 +11,7 @@ from .classifyconfig import ClassifyConfig
 from .buildconfig import BuildConfig
 from .evaluateconfig import EvaluateConfig
 from .defaultconfig import DefaultConfig
+from .taggingconfig import TaggingConfig
 
 CONFIG_FILENAME = "classifier.yaml"
 CONFIG_DIRS = [Path(__file__).parent.parent, Path("/etc/cacophony")]
@@ -29,7 +30,6 @@ class Config(DefaultConfig):
     build = attr.ib()
     tracking = attr.ib()
     train = attr.ib()
-    classify_tracking = attr.ib()
     classify = attr.ib()
     evaluate = attr.ib()
     excluded_tags = attr.ib()
@@ -39,6 +39,8 @@ class Config(DefaultConfig):
     worker_threads = attr.ib()
     debug = attr.ib()
     use_opt_flow = attr.ib()
+    tagging = attr.ib()
+    verbose = attr.ib()
 
     @classmethod
     def load_from_file(cls, filename=None):
@@ -55,7 +57,7 @@ class Config(DefaultConfig):
             raw = {}
         # Configuration from "tracking" section is used in
         # "classify_tracking" when not specified.
-        deep_copy_map_if_key_not_exist(raw["tracking"], raw["classify_tracking"])
+        # deep_copy_map_if_key_not_exist(raw["tracking"], raw["classify_tracking"])
         deep_copy_map_if_key_not_exist(default.as_dict(), raw)
 
         base_folder = raw.get("base_data_folder")
@@ -69,7 +71,7 @@ class Config(DefaultConfig):
             tracking=TrackingConfig.load(raw["tracking"]),
             load=LoadConfig.load(raw["load"]),
             train=TrainConfig.load(raw["train"], base_folder),
-            classify_tracking=TrackingConfig.load(raw["classify_tracking"]),
+            tagging=TaggingConfig.load(raw.get("tagging", {})),
             classify=ClassifyConfig.load(raw["classify"], base_folder),
             evaluate=EvaluateConfig.load(raw["evaluate"]),
             excluded_tags=raw["excluded_tags"],
@@ -81,6 +83,7 @@ class Config(DefaultConfig):
             build=BuildConfig.load(raw["build"]),
             debug=raw["debug"],
             use_opt_flow=raw["use_opt_flow"],
+            verbose=raw["verbose"],
         )
 
     @classmethod
@@ -98,11 +101,12 @@ class Config(DefaultConfig):
             tracking=TrackingConfig.get_defaults(),
             load=LoadConfig.get_defaults(),
             train=TrainConfig.get_defaults(),
-            classify_tracking=TrackingConfig.get_defaults(),
             classify=ClassifyConfig.get_defaults(),
             evaluate=EvaluateConfig.get_defaults(),
             debug=False,
             use_opt_flow=False,
+            tagging=TaggingConfig.get_defaults(),
+            verbose=False,
         )
 
     def validate(self):

@@ -172,9 +172,7 @@ class TestClassify:
     def __init__(self, args):
         self.classifier_config = Config.load_from_file(args.classify_config)
 
-        self.clip_classifier = ClipClassifier(
-            self.classifier_config, self.classifier_config.classify_tracking
-        )
+        self.clip_classifier = ClipClassifier(self.classifier_config)
         self.test_config = TestConfig.load_from_file(args.tests)
         self.results = []
         self.classifier = get_classifier(self.classifier_config)

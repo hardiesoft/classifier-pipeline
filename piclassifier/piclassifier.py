@@ -83,7 +83,7 @@ class PiClassifier(Processor):
 
         self.clip.set_res(self.res_x, self.res_y)
         self.clip.set_frame_buffer(
-            self.config.classify_tracking.high_quality_optical_flow,
+            self.config.tracking.high_quality_optical_flow,
             self.config.classify.cache_to_disk,
             self.config.use_opt_flow,
             True,

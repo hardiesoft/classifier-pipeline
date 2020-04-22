@@ -157,6 +157,7 @@ tracking:
 
     # Minimum confidence of track tag to accept
     min_tag_confidence: 0.8
+
 load:
     # precidence of tags (lower first)
     tag_precedence:
@@ -223,16 +224,28 @@ train:
     # base_data_folder. Defaults to "training"
     # train_dir: "training"
 
-classify_tracking:
-    # Note: frame_padding must be at least 3 or some frames may be too small for classification
-    frame_padding: 4
-    high_quality_optical_flow: True
-    filters:
-        track_overlap_ratio: 0.5
-        min_duration_secs: 1.0
-        track_min_offset: 4.0
-        track_min_delta: 1.0
-        track_min_mass: 2.0
+
+tagging:
+        # This is the minimum confidence (for an animal rating) a track should have to be considered a possible animal
+        min_confidence: .4
+
+        # This is the minimum confidence a track should have in order to tag as animal
+        min_tag_confidence: .8
+
+        # Classifications with a novelty above this value will be ignored for tagging.
+        max_tag_novelty: .7
+
+        # This is the minimum difference in confidence between next choice a track should have in order to tag it as the chosen animal
+        min_tag_clarity: .2
+
+        # If the same animal has clearly been identified in the video then a reduced clarity is acceptable.
+        min_tag_clarity_secondary: .05
+
+        # This is the minimum length of a track.
+        min_frames: 3
+
+        # If tracks moves this many pixels in any direction then we shall assume it isn't a false positive
+        animal_movement: 50
 
 classify:
     # Writes metadata to standard out instead of a file with extension .txt

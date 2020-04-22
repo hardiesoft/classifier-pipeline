@@ -25,10 +25,10 @@ class ClipClassifier(CPTVFileProcessor):
     # skips every nth frame.  Speeds things up a little, but reduces prediction quality.
     FRAME_SKIP = 1
 
-    def __init__(self, config, tracking_config, model_file=None):
+    def __init__(self, config, model_file=None):
         """ Create an instance of a clip classifier"""
 
-        super(ClipClassifier, self).__init__(config, tracking_config)
+        super(ClipClassifier, self).__init__(config)
         self.model_file = model_file
         if model_file is None:
             self.model_file = config.classify.model
@@ -288,33 +288,19 @@ class ClipClassifier(CPTVFileProcessor):
             save_file["original_tag"] = meta_data["primary_tag"]
         save_file["tracks"] = []
         for track in clip.tracks:
-            track_info = {}
             prediction = predictions.prediction_for(track.get_id())
-            start_s, end_s = clip.start_and_end_in_secs(track)
-            save_file["tracks"].append(track_info)
-            track_info["start_s"] = round(start_s, 2)
-            track_info["end_s"] = round(end_s, 2)
-            track_info["num_frames"] = prediction.num_frames
-            track_info["frame_start"] = track.start_frame
-            track_info["frame_end"] = track.end_frame
-            track_info["label"] = self.classifier.labels[prediction.best_label_index]
-            track_info["confidence"] = round(prediction.score(), 2)
-            track_info["clarity"] = round(prediction.clarity, 3)
-            track_info["average_novelty"] = round(prediction.average_novelty, 2)
-            track_info["max_novelty"] = round(prediction.max_novelty, 2)
-            track_info["all_class_confidences"] = {}
-            for i, value in enumerate(prediction.class_best_score):
-                label = self.classifier.labels[i]
-                track_info["all_class_confidences"][label] = round(float(value), 3)
-
-            positions = []
-            for region in track.bounds_history:
-                track_time = round(region.frame_number / clip.frames_per_second, 2)
-                positions.append([track_time, region])
-            track_info["positions"] = positions
+            save_file["tracks"].append(
+                track.to_meta(
+                    self.config.tagging,
+                    prediction,
+                    self.classifier.labels,
+                    clip.frames_per_second,
+                )
+            )
 
         if self.config.classify.meta_to_stdout:
             print(json.dumps(save_file, cls=tools.CustomJSONEncoder))
         else:
+            print("saving", meta_filename)
             with open(meta_filename, "w") as f:
                 json.dump(save_file, f, indent=4, cls=tools.CustomJSONEncoder)

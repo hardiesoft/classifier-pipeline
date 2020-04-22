@@ -240,6 +240,16 @@ class TrackPrediction:
         ]
         return guesses
 
+    def is_clear(self, tagging_config):
+        confidence = self.score()
+        if confidence < tagging_config.min_tag_confidence:
+            return False, "Low confidence - no tag"
+        if self.clarity < tagging_config.min_tag_clarity:
+            return False, "Confusion between two classes (similar confidence)"
+        if self.max_novelty > tagging_config.max_tag_novelty:
+            return False, "High novelty"
+        return True, None
+
 
 @attr.s(slots=True)
 class TrackResult:

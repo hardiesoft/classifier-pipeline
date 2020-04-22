@@ -72,6 +72,7 @@ class Track:
 
         self.from_metadata = False
         self.track_tags = None
+        self.stats = None
 
     @classmethod
     def from_region(cls, clip, region):
@@ -177,7 +178,12 @@ class Track:
         that this is a good track.
         :return: a TrackMovementStatistics record
         """
+        if self.stats is not None:
+            return self.stats
+        self.stats = self.calculate_stats()
+        return self.stats
 
+    def calculate_stats(self):
         if len(self) <= 1:
             return TrackMovementStatistics()
         # get movement vectors
@@ -272,8 +278,10 @@ class Track:
             self.start_frame = 0
             self.bounds_history = []
         else:
+            print("trimming")
             self.start_frame += start
             self.bounds_history = self.bounds_history[start : end + 1]
+            self.end_frame = self.start_frame + end
 
     def get_track_region_score(self, region: Region, moving_vel_thresh):
         """
@@ -374,6 +382,58 @@ class Track:
 
     def set_end(self, fps):
         self.end_s = (self.end_frame + 1) / fps
+
+    def is_significant_track(self, confidence, tagging_config):
+        if self.frames < tagging_config.min_frames:
+            return False, "Short track"
+        if confidence > tagging_config.min_confidence:
+            return True, None
+
+        stats = self.get_stats()
+        if stats.max_offset > tagging_config.min_movement:
+            return True, None
+        return False, "Low movement and poor confidence - ignore"
+
+    def to_meta(self, tagging_config, prediction, labels, fps):
+        track_info = {}
+        track_info["start_s"] = round(self.start_s, 2)
+        track_info["end_s"] = round(self.end_s, 2)
+        track_info["num_frames"] = self.frames
+        track_info["frame_start"] = self.start_frame
+        track_info["frame_end"] = self.end_frame
+
+        confidence = round(prediction.score(), 2)
+        track_info["confidence"] = confidence
+        track_info["clarity"] = round(prediction.clarity, 3)
+        track_info["average_novelty"] = round(prediction.average_novelty, 2)
+        track_info["max_novelty"] = round(prediction.max_novelty, 2)
+        track_info["all_class_confidences"] = {}
+        track_info["label"] = labels[prediction.best_label_index]
+
+        significant, message = self.is_significant_track(confidence, tagging_config)
+        if significant:
+            print("significant", self.get_id())
+            clear, message = prediction.is_clear(tagging_config)
+            if clear:
+                print("clear", self.get_id())
+
+                track_info["confident_label"] = track_info["label"]
+            else:
+                track_info["confident_label"] = "unidentified"
+                track_info["message"] = message
+        else:
+            track_info["message"] = message
+
+        for i, value in enumerate(prediction.class_best_score):
+            label = labels[i]
+            track_info["all_class_confidences"][label] = round(float(value), 3)
+        positions = []
+        for region in self.bounds_history:
+            track_time = round(region.frame_number / fps, 2)
+            positions.append([track_time, region])
+            track_info["positions"] = positions
+
+        return track_info
 
     @property
     def frames(self):

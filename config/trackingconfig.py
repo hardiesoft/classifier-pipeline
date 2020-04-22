@@ -21,6 +21,8 @@ import attr
 
 from config import config
 from .defaultconfig import DefaultConfig
+from .taggingconfig import TaggingConfig
+
 from track.trackextractor import TrackExtractor
 
 

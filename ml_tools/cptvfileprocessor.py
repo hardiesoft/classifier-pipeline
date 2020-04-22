@@ -24,10 +24,10 @@ class CPTVFileProcessor:
     Supports a worker pool to process multiple files at once.
     """
 
-    def __init__(self, config, tracker_config):
+    def __init__(self, config):
 
         self.config = config
-        self.tracker_config = tracker_config
+        self.tracker_config = config.tracking
 
         """
         A base class for processing large sets of CPTV video files.
