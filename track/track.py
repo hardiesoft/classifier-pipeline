@@ -278,7 +278,6 @@ class Track:
             self.start_frame = 0
             self.bounds_history = []
         else:
-            print("trimming")
             self.start_frame += start
             self.bounds_history = self.bounds_history[start : end + 1]
             self.end_frame = self.start_frame + end
@@ -384,9 +383,9 @@ class Track:
         self.end_s = (self.end_frame + 1) / fps
 
     def is_significant_track(self, confidence, tagging_config):
-        if self.frames < tagging_config.min_frames:
+        if self.frames < tagging_config.min_track_frames:
             return False, "Short track"
-        if confidence > tagging_config.min_confidence:
+        if confidence > tagging_config.min_track_confidence:
             return True, None
 
         stats = self.get_stats()
@@ -408,18 +407,15 @@ class Track:
         track_info["average_novelty"] = round(prediction.average_novelty, 2)
         track_info["max_novelty"] = round(prediction.max_novelty, 2)
         track_info["all_class_confidences"] = {}
-        track_info["label"] = labels[prediction.best_label_index]
+        track_info["tag"] = labels[prediction.best_label_index]
 
         significant, message = self.is_significant_track(confidence, tagging_config)
         if significant:
-            print("significant", self.get_id())
             clear, message = prediction.is_clear(tagging_config)
             if clear:
-                print("clear", self.get_id())
-
-                track_info["confident_label"] = track_info["label"]
+                track_info["confident_tag"] = track_info["tag"]
             else:
-                track_info["confident_label"] = "unidentified"
+                track_info["confident_tag"] = "unidentified"
                 track_info["message"] = message
         else:
             track_info["message"] = message

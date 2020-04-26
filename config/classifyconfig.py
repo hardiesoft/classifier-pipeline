@@ -31,6 +31,7 @@ from ml_tools.previewer import Previewer
 class ClassifyConfig(DefaultConfig):
 
     model = attr.ib()
+    model_name = attr.ib()
     meta_to_stdout = attr.ib()
     preview = attr.ib()
     classify_folder = attr.ib()
@@ -40,6 +41,7 @@ class ClassifyConfig(DefaultConfig):
     def load(cls, classify, base_folder):
         return cls(
             model=classify["model"],
+            model_name=classify["model_name"],
             meta_to_stdout=classify["meta_to_stdout"],
             preview=config.parse_options_param(
                 "preview", classify["preview"], Previewer.PREVIEW_OPTIONS
@@ -51,6 +53,7 @@ class ClassifyConfig(DefaultConfig):
     @classmethod
     def get_defaults(cls):
         return cls(
+            model_name=None,
             meta_to_stdout=False,
             model=None,
             preview="none",

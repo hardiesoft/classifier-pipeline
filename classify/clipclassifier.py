@@ -278,10 +278,15 @@ class ClipClassifier(CPTVFileProcessor):
         start, end = clip.start_and_end_time_absolute()
         save_file["start_time"] = start.isoformat()
         save_file["end_time"] = end.isoformat()
-        save_file["algorithm"] = {}
-        save_file["algorithm"]["model"] = self.model_file
-        save_file["algorithm"]["tracker_version"] = clip.VERSION
-        save_file["algorithm"]["tracker_config"] = self.tracker_config.as_dict()
+
+        algorithm = {}
+        if self.config.classify.model_name:
+            algorithm["model_name"] = self.config.classify.model_name
+        algorithm["model"] = self.model_file
+        algorithm["tracker_version"] = clip.VERSION
+        algorithm["tracker_config"] = self.tracker_config.as_dict()
+        save_file["algorithm"] = algorithm
+
         if meta_data:
             save_file["camera"] = meta_data["Device"]["devicename"]
             save_file["cptv_meta"] = meta_data
@@ -298,9 +303,29 @@ class ClipClassifier(CPTVFileProcessor):
                 )
             )
 
+        multiple_confidence = calculate_multiple_animal_confidence(save_file["tracks"])
+        if multiple_confidence >= self.config.tagging.min_track_confidence:
+            save_file["multiple"] = multiple_confidence
+
         if self.config.classify.meta_to_stdout:
             print(json.dumps(save_file, cls=tools.CustomJSONEncoder))
         else:
             print("saving", meta_filename)
             with open(meta_filename, "w") as f:
                 json.dump(save_file, f, indent=4, cls=tools.CustomJSONEncoder)
+
+
+def calculate_multiple_animal_confidence(all_tracks):
+    """ check that lower overlapping confidence is above threshold """
+    confidence = 0
+    sorted_tracks = sorted(all_tracks, key=lambda x: x["start_s"])
+
+    for i in range(0, len(sorted_tracks) - 1):
+        for overlap in sorted_tracks[i + 1 :]:
+            # all tracks that are occuring
+            if overlap["start_s"] + 1 < sorted_tracks[i]["end_s"]:
+                this_conf = min(sorted_tracks[i]["confidence"], overlap["confidence"])
+                confidence = max(confidence, this_conf)
+            else:
+                break
+    return confidence
