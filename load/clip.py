@@ -27,7 +27,6 @@ import pytz
 
 from ml_tools.tools import Rectangle
 from track.framebuffer import FrameBuffer
-from track.track import Track
 
 
 class Clip:
@@ -40,13 +39,11 @@ class Clip:
     def __init__(self, trackconfig, sourcefile, background=None, calc_stats=True):
         self._id = Clip.CLIP_ID
         Clip.CLIP_ID += 1
-        Track._track_id = 1
         self.disable_background_subtraction = False
         self.frame_on = 0
         self.ffc_affected = False
         self.crop_rectangle = None
         self.num_preview_frames = 0
-        self.preview_frames = []
         self.region_history = []
         self.active_tracks = set()
         self.tracks = []
@@ -74,54 +71,13 @@ class Clip:
         self.temp_thresh = self.config.temp_thresh
 
         if background is not None:
-            self.background = background
-            self._set_from_background()
+            # self.background = background
+            self.set_background(background)
 
-    def _set_from_background(self):
-        self.stats.mean_background_value = np.average(self.background)
-        self.set_temp_thresh()
-        self.background_calculated = True
-
-    def on_preview(self):
-        return not self.background_calculated
-
-    def calculate_preview_from_frame(self, frame, ffc_affected=False):
-        self.preview_frames.append((frame, ffc_affected))
-        if ffc_affected:
-            return
-        if self.background is None:
-            self.background = frame
-        else:
-            self.background = np.minimum(self.background, frame)
-        if self.background_frames == (self.num_preview_frames - 1):
-            self._set_from_background()
-        self.background_frames += 1
-
-    def background_from_frames(self, raw_frames):
-        number_frames = self.num_preview_frames
-        if not number_frames < len(raw_frames):
-            logging.error("Video consists entirely of preview")
-            number_frames = len(raw_frames)
-        frames = [np.float32(frame.pix) for frame in raw_frames[0:number_frames]]
-        self.background = np.min(frames, axis=0)
-        self.background = np.int32(np.rint(self.background))
-
-        self._set_from_background()
-
-    def background_from_whole_clip(self, frames):
-        """
-        Runs through all provided frames and estimates the background, consuming all the source frames.
-        :param frames_list: a list of numpy array frames
-        :return: background
-        """
-
-        # note: unfortunately this must be done before any other processing, which breaks the streaming architecture
-        # for this reason we must return all the frames so they can be reused
-
-        # [][] array
-
-        self.background = np.percentile(frames, q=10, axis=0)
-        self._set_from_background()
+    def set_background(self, background):
+        self.stats.mean_background_value = background.mean_value()
+        self.temp_thresh = background.get_temp_thresh()
+        self.stats.temp_thresh = self.temp_thresh
 
     def _add_active_track(self, track):
         self.active_tracks.add(track)
@@ -130,14 +86,14 @@ class Clip:
     def get_id(self):
         return str(self._id)
 
-    def set_temp_thresh(self):
-        if self.config.dynamic_thresh:
-            self.stats.temp_thresh = min(
-                self.config.temp_thresh, self.stats.mean_background_value
-            )
-            self.temp_thresh = self.stats.temp_thresh
-        else:
-            self.temp_thresh = self.config.temp_thresh
+    # def set_temp_thresh(self):
+    #     if self.config.dynamic_thresh:
+    #         self.stats.temp_thresh = min(
+    #             self.config.temp_thresh, self.stats.mean_background_value
+    #         )
+    #         self.temp_thresh = self.stats.temp_thresh
+    #     else:
+    #         self.temp_thresh = self.config.temp_thresh
 
     def set_video_stats(self, video_start_time):
         """
@@ -220,12 +176,13 @@ class Clip:
         if self.config.verbose:
             logging.info(info_string)
 
-    def add_frame(self, thermal, filtered, mask, ffc_affected=False):
-        self.frame_buffer.add_frame(
-            thermal, filtered, mask, self.frame_on, ffc_affected
-        )
-        if self.calc_stats:
-            self.stats.add_frame(thermal, filtered)
+    #
+    # def add_frame(self, thermal, filtered, mask, ffc_affected=False):
+    #     self.frame_buffer.add_frame(
+    #         thermal, filtered, mask, self.frame_on, ffc_affected
+    #     )
+    #     if self.calc_stats:
+    #         self.stats.add_frame(thermal, filtered)
 
 
 class ClipStats:
