@@ -140,6 +140,7 @@ class NewModel:
             for i in dense_sizes:
                 x = tf.keras.layers.Dense(i, activation="relu")(x)
             preds = tf.keras.layers.Dense(len(self.labels), activation="softmax")(x)
+            print("num preds is", self.labels)
             self.model = tf.keras.models.Model(inputs, outputs=preds)
 
         self.model.summary()
@@ -213,8 +214,8 @@ class NewModel:
             self.build_model()
         train = DataGenerator(
             self.datasets.train,
-            self.datasets.train.labels,
-            len(self.datasets.train.labels),
+            ["wallaby", "not"],
+            2,
             batch_size=self.params.get("batch_size", 32),
             lstm=self.params.get("lstm", False),
             use_thermal=self.params.get("use_thermal", False),
@@ -224,8 +225,8 @@ class NewModel:
         )
         validate = DataGenerator(
             self.datasets.validation,
-            self.datasets.train.labels,
-            len(self.datasets.train.labels),
+            ["wallaby", "not"],
+            2,
             batch_size=self.params.get("batch_size", 32),
             lstm=self.params.get("lstm", False),
             use_thermal=self.params.get("use_thermal", False),
@@ -276,6 +277,7 @@ class NewModel:
         self.datasets.train.rebalance(train_cap, exclude)
         self.datasets.validation.rebalance(validate_cap, exclude)
         self.set_labels()
+        self.labels = ["wallaby", "not"]
 
     def set_labels(self):
         # preserve label order if needed, this should be used when retraining
@@ -299,7 +301,9 @@ class NewModel:
         self.datasets = namedtuple("Datasets", "train, validation, test")
         datasets = pickle.load(open(dataset_filename, "rb"))
         self.datasets.train, self.datasets.validation, self.datasets.test = datasets
-        self.labels = self.datasets.train.labels
+        self.labels = ["wallaby", "not"]
+
+        # self.datasets.train.labels
 
         # augmentation really helps with reducing over-fitting, but test set should be fixed so we don't apply it there.
         self.datasets.train.enable_augmentation = self.params["augmentation"]
@@ -311,12 +315,12 @@ class NewModel:
                     dataset.remove_label(label)
 
         logging.info(
-            "Training frames: {0:.1f}k".format(self.datasets.train.rows / 1000)
+            "Training tracks: {0:.1f}k".format(self.datasets.train.rows / 1000)
         )
         logging.info(
-            "Validation frames: {0:.1f}k".format(self.datasets.validation.rows / 1000)
+            "Validation tracks: {0:.1f}k".format(self.datasets.validation.rows / 1000)
         )
-        logging.info("Test segments: {0:.1f}k".format(self.datasets.test.rows / 1000))
+        logging.info("Test tracks: {0:.1f}k".format(self.datasets.test.rows / 1000))
         logging.info("Labels: {}".format(self.labels))
 
     #  was some problem with batch norm in old tensorflows

@@ -85,7 +85,8 @@ def train_model(run_name, conf, hyper_params, grid_search=False):
     print()
     print("Found {0:.1f}K training examples".format(model.datasets.train.rows / 1000))
     print()
-
+    model.datasets.train.labels = ["wallaby", "not"]
+    model.datasets.validation.labels = ["wallaby", "not"]
     model.train_model(
         epochs=conf.train.epochs,
         run_name=run_name + " " + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),

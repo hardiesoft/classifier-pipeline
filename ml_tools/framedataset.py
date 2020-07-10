@@ -176,14 +176,14 @@ class TrackHeader:
             pred_frames = list(pred_frames)
             np.random.shuffle(pred_frames)
 
-            # np.random.shuffle(frames)
-            # pred_frames.extend(frames)
+            np.random.shuffle(frames)
+            pred_frames.extend(frames)
             self.important_frames = pred_frames
             return
 
         frames = list(frames)
         np.random.shuffle(frames)
-        # self.important_frames = list(frames)
+        self.important_frames = list(frames)
         # print("setting important frames", frames)
 
     def calculate_frame_crop(self):
@@ -569,16 +569,53 @@ class FrameDataset:
         label = self.db.get_tag(frame_sample.clip_id, frame_sample.track_id)
         return data[0], label
 
+    #
+    # def relabel(self, keep=[], wildcardlabel):
+    #     new_samples = []
+    #     tracks_by_id = {}
+    #     tracks = []
+    #
+    #
+    #     for key, value in self.labels_to_samples.items():
+    #         if label in keep:
+    #             continue
+    #         track_ids = self.tracks_by_label.setdefault(wildcardlabel,set())
+    #
+    #         samples = self.labels_to_samples.setdefault(wildcardlabel,[])
+    #         samples.extend(value)
+    #         for i in value:
+    #             track_id = TrackHeader.get_name(
+    #                 self.frame_samples[i].clip_id, self.frame_samples[i].track_id
+    #             )
+    #
+    #             track = self.tracks_by_id[track_id]
+    #             track_ids.add(track_id)
+    #             tracks_by_id[track_id] = track
+    #             new_samples.append(self.frame_samples[i])
+    #
+    #     self.tracks_by_id = tracks_by_id
+    #     self.frame_samples = new_samples
+
     def rebalance(self, label_cap=1000, exclude=[]):
         new_samples = []
         tracks_by_id = {}
         tracks = []
+        wallaby_count = len(self.labels_to_samples["wallaby"])
+        print("wallaby count", wallaby_count)
+        cap_else = int(wallaby_count * 2 / (len(self.labels) - 1))
         for key, value in self.labels_to_samples.items():
             track_ids = set()
             self.tracks_by_label[key] = track_ids
             if key in exclude:
                 self.labels.remove(key)
                 continue
+            if key != "wallaby":
+                label_cap = cap_else
+                print("set cap to", cap_else)
+            else:
+                continue
+                # label_cap = None
+            print("set cap to", cap_else, key)
 
             np.random.shuffle(value)
             if label_cap:

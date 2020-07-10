@@ -102,8 +102,7 @@ class DataGenerator(keras.utils.Sequence):
             segment_i = index
             frame = self.dataset.frame_samples[segment_i]
             data, label = self.dataset.fetch_frame(frame)
-            if label not in self.labels:
-                continue
+
             if self.lstm:
                 data = [
                     data[:, 0, :, :],
@@ -157,7 +156,10 @@ class DataGenerator(keras.utils.Sequence):
                 data = data * 255
                 data = self.preprocess_fn(data)
             X[i,] = data
-            y[i] = self.labels.index(label)
+            if label != "wallaby":
+                y[i] = 0
+            else:
+                y[i] = self.labels.index(label)
             clips.append(frame)
 
         return X, keras.utils.to_categorical(y, num_classes=self.n_classes), clips
