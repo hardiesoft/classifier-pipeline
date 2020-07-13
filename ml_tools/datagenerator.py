@@ -157,11 +157,12 @@ class DataGenerator(keras.utils.Sequence):
                 data = self.preprocess_fn(data)
             X[i,] = data
             if label != "wallaby":
-                y[i] = 0
+                y[i] = self.labels.index("not")
             else:
                 y[i] = self.labels.index(label)
+                print("wallaby index")
             clips.append(frame)
-
+        print(y)
         return X, keras.utils.to_categorical(y, num_classes=self.n_classes), clips
 
 
