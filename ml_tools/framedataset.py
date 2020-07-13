@@ -611,11 +611,10 @@ class FrameDataset:
                 continue
             if key != "wallaby":
                 label_cap = cap_else
-                print("set cap to", cap_else)
             else:
-                continue
-                # label_cap = None
-            print("set cap to", cap_else, key)
+                # continue
+                label_cap = None
+            print("set cap to", label_cap, key)
 
             np.random.shuffle(value)
             if label_cap:
