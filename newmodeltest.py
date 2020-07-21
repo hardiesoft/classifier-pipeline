@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from ml_tools.framedataset import TrackHeader
 from ml_tools.trackdatabase import TrackDatabase
-
+from ml_tools.datagenerator import DataGenerator, preprocess_frame
 from ml_tools.dataset import dataset_db_path
 import tensorflow as tf
 
@@ -63,7 +63,21 @@ class Test:
         self.classifier = NewModel(train_config=self.config.train)
 
         self.classifier.load_model(model_file)
-        logging.info("classifier loaded ({})".format(datetime.now() - t0))
+        logging.info(
+            "classifier loaded {} ({})".format(model_file, datetime.now() - t0)
+        )
+
+    def save_img(self, frame):
+        # thermal = frame[0]
+        thermal = frame
+        # thermal = np.float32(thermal)
+        # temp_min = np.amin(thermal)
+        # temp_max = np.amax(thermal)
+        # print(temp_min, temp_max)
+        #
+        # thermal = (thermal - temp_min) / (temp_max - temp_min)
+        colorized = np.uint8(255.0 * self.previewer.colourmap(thermal))
+        plt.imshow(colorized[:, :, :3])
 
     def identify_track(self, clip: Clip, track: Track):
         """
@@ -119,6 +133,30 @@ class Test:
                 # frame = frames[0]
 
                 prediction = self.classifier.classify_frame(frame)
+                track_prediction.classified_frame(
+                    region.frame_number, prediction, smooth_novelty
+                )
+
+                print(
+                    region,
+                    region.frame_number,
+                    self.classifier.labels[track_prediction.label_at_time(-1)],
+                    prediction,
+                )
+                if region.frame_number == 8:
+                    print("values", frame.shape)
+                    frame = preprocess_frame(
+                        frame,
+                        (self.classifier.frame_size, self.classifier.frame_size, 3),
+                        self.classifier.params.get("use_thermal", True),
+                        augment=False,
+                        # preprocess_fn=self.classifier.preprocess_fn,
+                    )
+                    fig = plt.figure(figsize=(52, 52))
+                    # self.save_img(frame)
+                    plt.imshow(frame)
+                    plt.savefig("8-new.png")
+                    raise "DONE"
                 # make false-positive prediction less strong so if track has dead footage it won't dominate a strong
                 # score
                 if fp_index is not None:
@@ -149,11 +187,6 @@ class Test:
                 # smooth_novelty = (
                 #     1 - prediction_smooth
                 # ) * smooth_novelty + prediction_smooth * novelty
-            track_prediction.classified_frame(
-                region.frame_number, smooth_prediction, smooth_novelty
-            )
-
-            # print(self.classifier.labels[track_prediction.label_at_time(-1)])
 
         return track_prediction
 
@@ -249,7 +282,7 @@ class Test:
             if len(track) == 0:
                 raise "Couldnt find track {}".format(track_id)
             track = track[0]
-            print("track start at ",track.start_frame)
+            print("track start at ", track.start_frame)
             for i in range(1):
                 if i == 0:
                     values = track_prediction.best_predictions
@@ -267,15 +300,15 @@ class Test:
                     axes = fig.add_subplot(rows, 5, i + 1)
                     axes.set_title(
                         "{}-{}".format(
-                            frame_i + track.start_frame ,
+                            frame_i + track.start_frame,
                             track_prediction.get_classified_footer(
                                 self.classifier.labels, frame_i
                             ),
                         )
                     )
 
-                    frame = clip.frame_buffer.get_frame(frame_i + track.start_frame )
-                    print(i, "corrping at",track.bounds_history[frame_i])
+                    frame = clip.frame_buffer.get_frame(frame_i + track.start_frame)
+                    print(i, "corrping at", track.bounds_history[frame_i])
                     frame = track.crop_by_region(frame, track.bounds_history[frame_i])[
                         0
                     ]
@@ -342,20 +375,21 @@ class Test:
             with open(meta_filename, "w") as f:
                 json.dump(save_file, f, indent=4, cls=tools.CustomJSONEncoder)
 
-
     def save_db(self, clip_id, track_id):
         db = TrackDatabase(os.path.join(self.config.tracks_folder, "dataset.hdf5"))
         clip_meta = db.get_clip_meta(clip_id)
         track_meta = db.get_track_meta(clip_id, track_id)
         predictions = db.get_track_predictions(clip_id, track_id)
-        track_header = TrackHeader.from_meta(clip_id, clip_meta, track_meta, predictions)
+        track_header = TrackHeader.from_meta(
+            clip_id, clip_meta, track_meta, predictions
+        )
         labels = db.get_labels()
         track_header.set_important_frames(labels, 0)
         start_offset = track_meta["start_frame"]
-        print("track starts at" , start_offset)
-        self.save_trackheader_important(db, track_header, str(clip_id),start_offset)
+        print("track starts at", start_offset)
+        self.save_trackheader_important(db, track_header, str(clip_id), start_offset)
 
-    def save_trackheader_important(self, db,  track_header, filename, start_offset):
+    def save_trackheader_important(self, db, track_header, filename, start_offset):
         prefix = "best"
         print(track_header.important_frames)
         for frame in track_header.important_frames:
@@ -378,18 +412,22 @@ class Test:
                     track_header.track_number,
                     frame_i,
                     frame_i + 1,
-                )[0][0,:]
+                )[0][0, :]
                 frame = np.float32(frame)
                 temp_min = np.amin(frame)
                 temp_max = np.amax(frame)
                 frame = (frame - temp_min) / (temp_max - temp_min)
                 # colorized = np.uint8(255.0 * self.previewer.colourmap(frame))
-                frame = frame[ :, :, np.newaxis]
+                frame = frame[:, :, np.newaxis]
                 print(frame.shape)
-                frame = np.repeat(frame,3,axis=2)
+                frame = np.repeat(frame, 3, axis=2)
                 plt.imshow(colorized[:, :, :3])
-            plt.savefig("{}-{}-{}.png".format(prefix, filename, track_header.track_number))
+            plt.savefig(
+                "{}-{}-{}.png".format(prefix, filename, track_header.track_number)
+            )
             plt.close(fig)
+
+
 def load_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(

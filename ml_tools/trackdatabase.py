@@ -396,7 +396,7 @@ class TrackDatabase:
                 node_attrs["start_frame"] = track.start_frame
                 node_attrs["end_frame"] = track.end_frame
                 if prediction:
-                    self._add_prediction_data(track_node, prediction, model)
+                    self._add_prediction_data(clip_id, track_node, prediction, model)
                     has_prediction = True
                 elif track.confidence:
                     node_attrs["confidence"] = track.confidence

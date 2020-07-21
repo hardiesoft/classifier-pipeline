@@ -62,7 +62,7 @@ class NewModel:
             "scale_frequency": 0.5,
             # dropout
             "keep_prob": 0.5,
-            "lstm":False,
+            "lstm": False,
             # training
             "batch_size": 16,
         }
@@ -314,17 +314,21 @@ class NewModel:
     def preprocess(self, frame, data):
         if self.use_thermal:
             channel = TrackChannels.thermal
+            print("using thermal")
         else:
             channel = TrackChannels.filtered
         data = data[channel]
 
         # normalizes data, constrast stretch good or bad?
         if self.augment:
+            print("augmenting")
             percent = random.randint(0, 2)
         else:
             percent = 0
+
         max = int(np.percentile(data, 100 - percent))
         min = int(np.percentile(data, percent))
+        print(max, min)
         if max == min:
             logging.error(
                 "frame max and min are the same clip %s track %s frame %s",
@@ -376,11 +380,11 @@ class NewModel:
 
         if preprocess:
             frame = preprocess_frame(
-                frame,
+                np.float32(frame),
                 (self.frame_size, self.frame_size, 3),
                 self.params.get("use_thermal", True),
                 augment=False,
-                preprocess_fn=self.preprocess_fn,
+                # preprocess_fn=self.preprocess_fn,
             )
         # if NewModel.plt_i < 41:
         #     axes = NewModel.fig.add_subplot(4, 10, NewModel.plt_i)

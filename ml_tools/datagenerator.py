@@ -187,17 +187,20 @@ def preprocess_frame(
 ):
     if use_thermal:
         channel = TrackChannels.thermal
+        print("thermal")
     else:
         channel = TrackChannels.filtered
     data = data[channel]
-
+    print("pre values", data)
     # normalizes data, constrast stretch good or bad?
     if augment:
         percent = random.randint(0, 2)
+        print("aug")
     else:
         percent = 0
     max = int(np.percentile(data, 100 - percent))
     min = int(np.percentile(data, percent))
+    print(min, max)
     if max == min:
         #     logging.error(
         #         "frame max and min are the same clip %s track %s frame %s",
@@ -223,6 +226,7 @@ def preprocess_frame(
 
     # pre proce expects values in range 0-255
     if preprocess_fn:
+        print("pre pro")
         data = data * 255
         data = preprocess_fn(data)
     return data

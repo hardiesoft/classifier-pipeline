@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 import matplotlib.pyplot as plt
-
+from ml_tools.datagenerator import DataGenerator, preprocess_frame
 from datetime import datetime
 import os
 import logging
@@ -136,16 +136,22 @@ class ClipLoader:
         self.classifier = NewModel(train_config=self.config.train)
 
         self.classifier.load_model(model_file)
-        logging.info("classifier loaded ({})".format(datetime.now() - t0))
+        logging.info(
+            "classifier loaded {} ({})".format(model_file, datetime.now() - t0)
+        )
 
     def save_img(self, frame):
-        thermal = frame[0]
-        thermal = np.float32(thermal)
-        temp_min = np.amin(thermal)
-        temp_max = np.amax(thermal)
-        thermal = (thermal - temp_min) / (temp_max - temp_min)
+        # thermal = frame[0]
+        thermal = frame
+        # thermal = np.float32(thermal)
+        # temp_min = np.amin(thermal)
+        # temp_max = np.amax(thermal)
+        # print(temp_min, temp_max)
+        # thermal = (thermal - temp_min) / (temp_max - temp_min)
+        print(thermal.shape)
         colorized = np.uint8(255.0 * self.previewer.colourmap(thermal))
         plt.imshow(colorized[:, :, :3])
+
     def _export_tracks(self, full_path, clip):
         """
         Writes tracks to a track database.
@@ -174,11 +180,11 @@ class ClipLoader:
             for region in track.bounds_history:
                 frame = clip.frame_buffer.get_frame(region.frame_number)
                 frame = track.crop_by_region(frame, region, filter_mask_by_region=False)
-                if i < 25:
-                    axes = fig.add_subplot(rows, 5, i + 1)
-                    axes.set_title(region.frame_number)
-                    self.save_img(frame)
-                i += 1
+
+                # if i < 25:
+                #     axes = fig.add_subplot(rows, 5, i + 1)
+                #     axes.set_title(region.frame_number)
+                #     self.save_img(frame)
                 # zero out the filtered channel
                 if not self.config.load.include_filtered_channel:
                     frame[TrackChannels.filtered] = 0
@@ -191,8 +197,32 @@ class ClipLoader:
                     # )
                     # frame = frames[0]
 
-                    prediction = self.classifier.classify_frame(np.copy(frame))
+                    prediction = self.classifier.classify_frame(frame)
                     track_prediction.classified_frame(region.frame_number, prediction)
+
+                    print(
+                        region,
+                        region.frame_number,
+                        self.classifier.labels[track_prediction.label_at_time(-1)],
+                        prediction,
+                    )
+                    if region.frame_number == 8:
+                        print("values", frame.shape)
+                        print("ageter")
+                        frame = preprocess_frame(
+                            frame,
+                            (self.classifier.frame_size, self.classifier.frame_size, 3),
+                            self.classifier.params.get("use_thermal", True),
+                            augment=False,
+                            # preprocess_fn=self.classifier.preprocess_fn,
+                        )
+                        fig = plt.figure(figsize=(52, 52))
+                        plt.imshow(frame)
+                        # self.save_img(frame)
+                        plt.savefig("8-load.png")
+                        raise "DONE"
+                    # print(i, track_prediction.score_at_time(i))
+                i += 1
 
             self.database.add_track(
                 clip.get_id(),
@@ -204,7 +234,8 @@ class ClipLoader:
                 prediction=track_prediction,
                 model=self.classifier,
             )
-            plt.savefig("{}-{}.png".format(clip.get_id(), track.get_id()))
+            # plt.savefig("{}-{}.png".format(clip.get_id(), track.get_id()))
+
     def _filter_clip_tracks(self, clip_metadata):
         """
         Removes track metadata for tracks which are invalid. Tracks are invalid
