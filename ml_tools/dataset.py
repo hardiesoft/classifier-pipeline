@@ -847,8 +847,6 @@ class Dataset:
             "segment_mass"
         ]
         self.segments.extend(track_header.segments)
-        if track_header.label not in self.labels:
-            self.labels.append(track_header.label)
         self.add_track_to_mappings(track_header)
 
         return True

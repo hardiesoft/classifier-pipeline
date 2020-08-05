@@ -494,7 +494,6 @@ def add_random_camera_samples(
         dataset, label, used_bins, required_samples, required_bins
     ):
 
-        print(sample_set, label)
         camera_i, cam_bins = sample_set[cur_camera]
         if len(cam_bins) == 0:
             num_cameras -= 1
@@ -568,7 +567,6 @@ def add_random_camera_frames(
         fill_datasets until the bin requirements are met
         Updates the bins in sample_set and used_bins
         """
-    used_bins = []
     num_cameras = len(cameras)
     cur_camera = 0
     print("max frames for ", label, max_frames)
