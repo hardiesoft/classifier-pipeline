@@ -14,6 +14,7 @@ import multiprocessing
 import time
 from ml_tools.dataset import Preprocessor
 from ml_tools import tools
+from ml_tools.imageprocessing import movement_images
 
 FRAME_SIZE = 48
 FRAMES_PER_SECOND = 9
@@ -439,73 +440,6 @@ def square_clip_flow(data_flow_h, data_flow_v, square_width, type=None):
     return background, success
 
 
-def movement(
-    frames, regions, dim=None, channel=TrackChannels.filtered, require_movement=False,
-):
-    """Return 2 images describing the movement, one has dots representing
-     the centre of mass, the other is a collage of all frames
-     """
-
-    i = 0
-    if dim is None:
-        # gp should be from track data
-        dim = (120, 160)
-    dots = np.zeros(dim)
-    overlay = np.zeros(dim)
-
-    prev = None
-    value = 60
-    img = Image.fromarray(np.uint8(dots))  # ignore alpha
-
-    d = ImageDraw.Draw(img)
-    # draw movment lines and draw frame overlay
-    center_distance = 0
-    min_distance = 2
-    prev_rect = None
-    for i, frame in enumerate(frames):
-        region = regions[i]
-        rect = tools.Rectangle.from_ltrb(*region)
-
-        frame = frame[channel]
-        x = int(rect.mid_x)
-        y = int(rect.mid_y)
-        if prev is not None:
-            if prev[0] == x and prev[1] == y:
-                value *= 1
-            else:
-                value = 60
-            distance = math.sqrt(pow(prev[0] - x, 2) + pow(prev[1] - y, 2))
-            center_distance += distance
-            distance *= 21.25
-            distance = min(distance, 255)
-            d.line(prev + (x, y), fill=int(value), width=1)
-        if not require_movement or (prev is None or center_distance > min_distance):
-            subimage = rect.subimage(overlay)
-            subimage[:, :] += np.float32(frame)
-            center_distance = 0
-            min_distance = rect.width / 2.0
-        prev = (x, y)
-        colour = int(value)
-
-    # then draw dots so they go over the top
-    for i, frame in enumerate(frames):
-        region = regions[i]
-        rect = tools.Rectangle.from_ltrb(*region)
-        x = int(rect.mid_x)
-        y = int(rect.mid_y)
-
-        if prev is not None:
-            if prev[0] == x and prev[1] == y:
-                value *= 1
-            else:
-                value = 120
-        prev = (x, y)
-        colour = int(value)
-        d.point([prev], fill=colour)
-
-    return np.array(img), overlay
-
-
 def preprocess_movement(
     data,
     segment,
@@ -534,8 +468,8 @@ def preprocess_movement(
     square, success = square_clip(segment, square_width, type)
     if not success:
         return None
-    dots, overlay = movement(
-        data, regions, dim=square.shape, channel=channel, require_movement=type >= 5,
+    dots, overlay = movement_images(
+        data, regions, square.shape, channel=channel, require_movement=type >= 5,
     )
     dots = dots / 255
     overlay, success = normalize(overlay, min=0)
