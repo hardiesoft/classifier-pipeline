@@ -80,6 +80,7 @@ class DataGenerator(keras.utils.Sequence):
         self.loaded_epochs = 0
         self.epochs = epochs
         self.epoch_data = []
+        self.epoch_stats = []
         self.preload = preload
         if self.preload:
             self.load_queue = multiprocessing.Queue()
@@ -162,6 +163,11 @@ class DataGenerator(keras.utils.Sequence):
         if self.keep_epoch:
             self.epoch_data[self.cur_epoch][0][index] = X
             self.epoch_data[self.cur_epoch][1][index] = y
+        stats = self.epoch_stats[self.cur_epoch]
+        for prediction in y:
+            label = self.labels[np.argmax(prediction)]
+            stats.setdefault(label, 0)
+            stats[label] += 1
 
         if (index + 1) == len(self):
             self.load_next_epoch(True)
@@ -254,8 +260,11 @@ class DataGenerator(keras.utils.Sequence):
     def on_epoch_end(self):
         "Updates indexes after each epoch"
         batches = len(self)
+        self.epoch_stats.append({})
         self.epoch_data.append(([None] * batches, [None] * batches))
         logging.debug("epoch ended for %s", self.dataset.name)
+        if self.cur_epoch > 0:
+            logging.info("epoch %s stats %s", self.epoch_stats[self.cur_epoch - 1])
         self.cur_epoch += 1
 
     def _data(self, samples, to_categorical=True):
