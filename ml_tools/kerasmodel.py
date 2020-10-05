@@ -397,29 +397,29 @@ class KerasModel:
         self.validate.stop_load()
         self.train.stop_load()
         test_accuracy = None
-        if self.datasets.test and self.datasets.test.has_data():
-            test = DataGenerator(
-                self.datasets.test,
-                self.datasets.train.labels,
-                len(self.datasets.train.labels),
-                batch_size=self.params.batch_size,
-                lstm=self.params.lstm,
-                use_thermal=self.params.use_thermal,
-                use_filtered=self.params.use_filtered,
-                use_movement=self.params.use_movement,
-                shuffle=True,
-                model_preprocess=self.preprocess_fn,
-                epochs=1,
-                load_threads=4,
-                cap_samples=True,
-                cap_at="wallaby",
-                type=self.type,
-                square_width=self.params.square_width,
-            )
-            test_accuracy = self.model.evaluate(test)
-            test.stop_load()
-            logging.info("Test accuracy is %s", test_accuracy)
-        self.save(run_name, history=history, test_results=test_accuracy)
+        # if self.datasets.test and self.datasets.test.has_data():
+        #     test = DataGenerator(
+        #         self.datasets.test,
+        #         self.datasets.train.labels,
+        #         len(self.datasets.train.labels),
+        #         batch_size=self.params.batch_size,
+        #         lstm=self.params.lstm,
+        #         use_thermal=self.params.use_thermal,
+        #         use_filtered=self.params.use_filtered,
+        #         use_movement=self.params.use_movement,
+        #         shuffle=True,
+        #         model_preprocess=self.preprocess_fn,
+        #         epochs=1,
+        #         load_threads=4,
+        #         cap_samples=True,
+        #         cap_at="wallaby",
+        #         type=self.type,
+        #         square_width=self.params.square_width,
+        #     )
+        #     test_accuracy = self.model.evaluate(test)
+        #     test.stop_load()
+        #     logging.info("Test accuracy is %s", test_accuracy)
+        # self.save(run_name, history=history, test_results=test_accuracy)
 
     def checkpoints(self, run_name):
         val_loss = os.path.join(self.checkpoint_folder, run_name, "val_loss")
