@@ -39,7 +39,7 @@ class DataGenerator(keras.utils.Sequence):
         buffer_size=128,
         epochs=10,
         load_threads=1,
-        preload=True,
+        preload=False,
         use_movement=False,
         balance_labels=True,
         keep_epoch=False,
@@ -147,6 +147,7 @@ class DataGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         "Generate one batch of data"
         # Generate indexes of the batch
+
         logging.debug("%s requsting index %s", self.dataset.name, index)
         if self.keep_epoch and self.use_previous_epoch is not None:
             X = self.epoch_data[self.use_previous_epoch][0][
@@ -282,9 +283,15 @@ class DataGenerator(keras.utils.Sequence):
         if self.lstm:
             X = np.empty((len(samples), samples[0].frames, *self.dim))
         else:
-            X = np.empty((len(samples), *self.dim,))
+            X = np.zeros((self.batch_size, *self.dim,))
 
-        y = np.empty((len(samples)), dtype=int)
+        y = np.empty((self.batch_size), dtype=int)
+        for i in range(self.batch_size):
+            y[i] = random.randint(0, len(self.labels) - 1)
+
+        if to_categorical:
+            y = keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return np.array(X), y
         # Generate data
         data_i = 0
         if self.use_thermal:
