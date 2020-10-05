@@ -254,7 +254,11 @@ class DataGenerator(keras.utils.Sequence):
             #     )
 
             for index in range(len(self)):
-                self.load_queue.put(index)
+                samples = self.samples[
+                    index * self.batch_size : (index + 1) * self.batch_size
+                ]
+                pickled_samples = pickle.dumps((self.loaded_epochs + 1, samples))
+                self.load_queue.put(pickled_samples)
         self.loaded_epochs += 1
 
     def on_epoch_end(self):
@@ -785,8 +789,9 @@ def preloader(q, load_queue, dataset):
     )
     while True:
         if not q.full():
-
-            q.put(dataset.loadbatch(0))
+            samples = pickle.loads(load_queue.get())
+            dataset.loaded_epochs = samples[0]
+            q.put(dataset.loadbatch(samples[1]))
 
         else:
             time.sleep(0.1)
