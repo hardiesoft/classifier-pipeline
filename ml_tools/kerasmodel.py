@@ -390,7 +390,7 @@ class KerasModel:
                 tf.keras.callbacks.TensorBoard(
                     self.log_dir, write_graph=True, write_images=True
                 ),
-                *checkpoints
+                # *checkpoints
                 # cm_callback,
             ],  # log metrics
         )
