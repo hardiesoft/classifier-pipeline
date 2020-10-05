@@ -328,6 +328,7 @@ class DataGenerator(keras.utils.Sequence):
 
                     # repeat some frames if need be
                     if len(frames) < self.square_width ** 2:
+                        frames = list(frames)
                         missing = self.square_width ** 2 - len(frames)
                         frames.extend(
                             np.random.choice(

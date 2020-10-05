@@ -322,6 +322,7 @@ class KerasModel:
         if self.train:
             self.train.stop_load()
 
+    @profile
     def train_model(self, epochs, run_name):
         self.log_dir = os.path.join(self.log_base, run_name)
         os.makedirs(self.log_base, exist_ok=True)
