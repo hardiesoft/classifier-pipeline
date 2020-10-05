@@ -794,6 +794,11 @@ def preloader(q, load_queue, dataset):
             q.put(dataset.loadbatch(samples[1]))
 
         else:
+            logging.info(
+                "%s q is full, dataset size is %s",
+                dataset.dataset.name,
+                sys.getsizeof(dataset),
+            )
             time.sleep(0.1)
 
 
