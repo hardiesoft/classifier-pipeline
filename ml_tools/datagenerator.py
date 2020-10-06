@@ -282,12 +282,7 @@ class DataGenerator(keras.utils.Sequence):
         if self.lstm:
             X = np.empty((len(samples), samples[0].frames, *self.dim))
         else:
-            X = np.empty(
-                (
-                    len(samples),
-                    *self.dim,
-                )
-            )
+            X = np.empty((len(samples), *self.dim,))
 
         y = np.empty((len(samples)), dtype=int)
         # Generate data
@@ -391,19 +386,11 @@ class DataGenerator(keras.utils.Sequence):
                     continue
                 if self.lstm:
                     data = preprocess_lstm(
-                        data,
-                        self.dim,
-                        channel,
-                        self.augment,
-                        self.model_preprocess,
+                        data, self.dim, channel, self.augment, self.model_preprocess,
                     )
                 else:
                     data = preprocess_frame(
-                        data,
-                        self.dim,
-                        None,
-                        self.augment,
-                        self.model_preprocess,
+                        data, self.dim, None, self.augment, self.model_preprocess,
                     )
             if data is None:
                 logging.debug(
@@ -431,9 +418,7 @@ def resize(image, dim):
 
 def resize_cv(image, dim, interpolation=cv2.INTER_LINEAR, extra_h=0, extra_v=0):
     return cv2.resize(
-        image,
-        dsize=(dim[0] + extra_h, dim[1] + extra_v),
-        interpolation=interpolation,
+        image, dsize=(dim[0] + extra_h, dim[1] + extra_v), interpolation=interpolation,
     )
 
 
@@ -502,7 +487,7 @@ def square_clip(data, square_width, type=None, augment=False):
     return background, success
 
 
-def square_clip_flow(data_flow_h, data_flow_v, square_width, type=None):
+def square_clip_overlay(data, square_width, regions, type=None, augment=False):
     # lay each frame out side by side in rows
     frame_size = Preprocessor.FRAME_SIZE
     background = np.zeros((square_width * frame_size, square_width * frame_size))
@@ -511,32 +496,38 @@ def square_clip_flow(data_flow_h, data_flow_v, square_width, type=None):
     success = False
     for x in range(square_width):
         for y in range(square_width):
-            if i >= len(data_flow_h):
-                if type >= 4:
-                    frame_i = random.randint(0, len(data_flow_h) - 1)
-                    flow_h = data_flow_h[frame_i]
-                    flow_v = data_flow_v[frame_i]
-
-                else:
-                    flow_v = data_flow_v[-1]
-                    flow_h = data_flow_h[-1]
-
+            if i >= len(data):
+                # if type >= 4:
+                #     frame_i = random.randint(0, len(data) - 1)
+                #     frame = data[frame_i]
+                # else:
+                frame = data[-2]
             else:
-                flow_v = data_flow_v[i]
-                flow_h = data_flow_h[i]
-
-            flow_magnitude = (
-                np.linalg.norm(np.float32([flow_h, flow_v]), ord=2, axis=0) / 4.0
-            )
-            frame, norm_success = normalize(flow_magnitude)
-
+                frame = data[i]
+            next_frame_i = min(i + 5, len(data) - 1)
+            next_frame = data[next_frame_i]
+            next_frame, norm_success = normalize(next_frame)
+            frame, norm_success = normalize(frame)
             if not norm_success:
                 continue
             success = True
+
+            region = tools.Rectangle.from_ltrb(*regions[i])
+
+            region_two = tools.Rectangle.from_ltrb(*regions[next_frame_i])
+            x_vel = abs(int(region_two.mid_x - region.mid_x))
+            y_vel = abs(int(region_two.mid_y - region.mid_y))
+            # writing dot image
+
             background[
                 x * frame_size : (x + 1) * frame_size,
                 y * frame_size : (y + 1) * frame_size,
             ] = np.float32(frame)
+            print(x_vel, y_vel, next_frame.shape, next_frame[y_vel:, x_vel:].shape)
+            background[
+                x * frame_size + y_vel : (x + 1) * frame_size,
+                y * frame_size + x_vel : (y + 1) * frame_size,
+            ] += np.float32(next_frame[y_vel:, x_vel:] * 0.2)
             i += 1
 
     return background, success
@@ -587,13 +578,7 @@ def dots_movement(
 
         # writing overlay image
         if require_movement and prev_overlay:
-            center_distance = tools.eucl_distance(
-                prev_overlay,
-                (
-                    x,
-                    y,
-                ),
-            )
+            center_distance = tools.eucl_distance(prev_overlay, (x, y,),)
         frame = frame[1]
         if (
             prev_overlay is None or center_distance > min_distance
@@ -664,12 +649,12 @@ def preprocess_movement(
     epoch=0,
 ):
     segment, flipped = Preprocessor.apply(*segment, augment=augment, default_inset=0)
-    segment = segment[:, channel]
     # as long as one frame is fine
-    square, success = square_clip(segment, square_width, type, augment=augment)
+    square, success = square_clip(
+        segment[:, channel], square_width, type, augment=augment
+    )
     if not success:
         return None
-
     dots, overlay = dots_movement(
         data,
         regions,
@@ -710,11 +695,24 @@ def preprocess_movement(
         square_one, success = square_clip(segment[25:], square_width, type)
         data[:, :, 1] = square_one
         data[:, :, 2] = overlay
+    elif type == 15:
+        square_overlay, success = square_clip_overlay(
+            segment[:, TrackChannels.filtered],
+            square_width,
+            regions,
+            type,
+            augment=augment,
+        )
+        data[:, :, 0] = square
+        data[:, :, 1] = square_overlay
+        data[:, :, 2] = np.zeros((dots.shape))
+        data[:, :, 2][:height, :width] = overlay
     elif type >= 9:
         data[:, :, 0] = square
         data[:, :, 1] = np.zeros((dots.shape))
         data[:, :, 2] = np.zeros((dots.shape))
         data[:, :, 2][:height, :width] = overlay
+
     else:
         data[:, :, 0] = square
         data[:, :, 1] = dots
@@ -742,11 +740,7 @@ def preprocess_movement(
 
 
 def preprocess_lstm(
-    data,
-    output_dim,
-    channel,
-    augment=False,
-    preprocess_fn=None,
+    data, output_dim, channel, augment=False, preprocess_fn=None,
 ):
 
     data = data[:, channel]
@@ -769,11 +763,7 @@ def preprocess_lstm(
 
 
 def preprocess_frame(
-    data,
-    output_dim,
-    channel,
-    augment=False,
-    preprocess_fn=None,
+    data, output_dim, channel, augment=False, preprocess_fn=None,
 ):
     if channel is not None:
         data = data[channel]
