@@ -31,6 +31,7 @@ from track.region import Region
 from track.track import Track
 from piclassifier.motiondetector import is_affected_by_ffc
 from ml_tools.imageprocessing import normalize
+from kalman.kalmanpreviewer import KalmanPreviewer
 
 from matplotlib import pyplot as plt
 
@@ -78,9 +79,9 @@ class ClipTrackExtractor:
             )
             clip.set_video_stats(video_start_time)
             clip.calculate_background(reader)
-            plt.subplot(143), plt.imshow(clip.background, cmap="gray")
-            plt.title("Background Image"), plt.xticks([]), plt.yticks([])
-            plt.show()
+            # plt.subplot(143), plt.imshow(clip.background, cmap="gray")
+            # plt.title("Background Image"), plt.xticks([]), plt.yticks([])
+            # plt.show()
 
         with open(clip.source_file, "rb") as f:
             reader = CPTVReader(f)

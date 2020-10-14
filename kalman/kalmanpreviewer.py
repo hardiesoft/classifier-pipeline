@@ -1,9 +1,70 @@
 from ml_tools.previewer import Previewer
+import cv2
+import numpy as np
 
 
 class KalmanPreviewer(Previewer):
+    def __init__(self, config, preview_type):
+        self.config = config
+        self.colourmap = self._load_colourmap()
+
+        # make sure all the required files are there
+        self.track_descs = {}
+        self.font
+        self.font_title
+        self.preview_type = preview_type
+        self.frame_scale = 1
+        self.debug = config.debug
+        # super(Previewer, self).__init__(config, preview_type)
+        self.kalman = cv2.KalmanFilter(4, 2)
+        self.kalman.measurementMatrix = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0]], np.float32
+        )
+
+        self.kalman.transitionMatrix = np.array(
+            [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+        )
+
+        self.kalman.processNoiseCov = (
+            np.array(
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+            )
+            * 0.03
+        )
+
+        self.measurement = np.array((2, 1), np.float32)
+        self.prediction = np.zeros((2, 1), np.float32)
+
+    def reset_kalman(self):
+        self.kalman = cv2.KalmanFilter(4, 2)
+        self.kalman.measurementMatrix = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0]], np.float32
+        )
+
+        self.kalman.transitionMatrix = np.array(
+            [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+        )
+
+        self.kalman.processNoiseCov = (
+            np.array(
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+            )
+            * 0.03
+        )
+
+        self.measurement = np.array((2, 1), np.float32)
+        self.prediction = np.zeros((2, 1), np.float32)
+
     def add_tracks(
-        self, draw, tracks, frame_number, track_predictions=None, screen_bounds=None
+        self,
+        draw,
+        tracks,
+        frame_number,
+        track_predictions=None,
+        screen_bounds=None,
+        colours=None,
+        tracks_text=None,
+        v_offset=0,
     ):
         # look for any tracks that occur on this frame
         for index, track in enumerate(tracks):
@@ -16,8 +77,25 @@ class KalmanPreviewer(Previewer):
                     outline=self.TRACK_COLOURS[index % len(self.TRACK_COLOURS)],
                 )
 
-                # draw centre
-                xx = rect.mid_x * 4.0
-                yy = rect.mid_y * 4.0
-                center = track.bounds_history[frame_offset].mid_x
-                draw.arc((xx - 4, yy - 4, xx + 4, yy + 4), 0, 360)
+                pts = np.array(
+                    [np.float32(rect.mid_x * 4), np.float32(rect.mid_y * 4)], np.float32
+                )
+                self.kalman.correct(pts)
+
+                prediction = self.kalman.predict()
+                draw.arc(
+                    (
+                        prediction[0] - 4,
+                        prediction[1] - 4,
+                        prediction[0] + 4,
+                        prediction[1] + 4,
+                    ),
+                    0,
+                    360,
+                )
+
+                # # draw centre
+                # xx = rect.mid_x * 4.0
+                # yy = rect.mid_y * 4.0
+                # center = track.bounds_history[frame_offset].mid_x
+                # draw.arc((xx - 4, yy - 4, xx + 4, yy + 4), 0, 360)

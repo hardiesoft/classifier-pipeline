@@ -6,6 +6,7 @@ from typing import Dict
 
 from datetime import datetime
 import numpy as np
+from kalman.kalmanpreviewer import KalmanPreviewer
 
 from classify.trackprediction import Predictions, TrackPrediction
 from load.clip import Clip
@@ -35,8 +36,8 @@ class ClipClassifier(CPTVFileProcessor):
         self.kerasmodel = kerasmodel
         # prediction record for each track
         self.predictions = Predictions(self.classifier.labels)
-
-        self.previewer = Previewer.create_if_required(config, config.classify.preview)
+        self.previewer = KalmanPreviewer(config, Previewer.PREVIEW_BOXES)
+        # self.previewer = Previewer.create_if_required(config, config.classify.preview)
 
         self.start_date = None
         self.end_date = None
@@ -213,6 +214,8 @@ class ClipClassifier(CPTVFileProcessor):
         if self.previewer:
             logging.info("Exporting preview to '{}'".format(mpeg_filename))
             self.previewer.export_clip_preview(mpeg_filename, clip, predictions)
+
+            # self.previewer.export_clip_preview(mpeg_filename, clip, predictions)
         logging.info("saving meta data")
         self.save_metadata(filename, meta_filename, clip, predictions)
 
