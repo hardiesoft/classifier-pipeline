@@ -17,43 +17,23 @@ class KalmanPreviewer(Previewer):
         self.debug = config.debug
         # super(Previewer, self).__init__(config, preview_type)
         self.kalman = cv2.KalmanFilter(4, 2)
-        self.kalman.measurementMatrix = np.array(
-            [[1, 0, 0, 0], [0, 1, 0, 0]], np.float32
-        )
+        self.kalman.measurementMatrix = np.eye(2, 4, dtype=np.float32)
 
         self.kalman.transitionMatrix = np.array(
             [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
         )
 
-        self.kalman.processNoiseCov = (
-            np.array(
-                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
-            )
-            * 0.03
-        )
-
-        self.measurement = np.array((2, 1), np.float32)
-        self.prediction = np.zeros((2, 1), np.float32)
+        self.kalman.processNoiseCov = np.eye(4, 4, dtype=np.float32) * 0.03
 
     def reset_kalman(self):
         self.kalman = cv2.KalmanFilter(4, 2)
-        self.kalman.measurementMatrix = np.array(
-            [[1, 0, 0, 0], [0, 1, 0, 0]], np.float32
-        )
+        self.kalman.measurementMatrix = np.eye(2, 4, dtype=np.float32)
 
         self.kalman.transitionMatrix = np.array(
             [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
         )
 
-        self.kalman.processNoiseCov = (
-            np.array(
-                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
-            )
-            * 0.03
-        )
-
-        self.measurement = np.array((2, 1), np.float32)
-        self.prediction = np.zeros((2, 1), np.float32)
+        self.kalman.processNoiseCov = np.eye(4, 4, dtype=np.float32) * 0.03
 
     def add_tracks(
         self,
@@ -80,6 +60,7 @@ class KalmanPreviewer(Previewer):
                 pts = np.array(
                     [np.float32(rect.mid_x * 4), np.float32(rect.mid_y * 4)], np.float32
                 )
+                print("correct with pt", pts)
                 self.kalman.correct(pts)
 
                 prediction = self.kalman.predict()
@@ -93,7 +74,6 @@ class KalmanPreviewer(Previewer):
                     0,
                     360,
                 )
-
                 # # draw centre
                 # xx = rect.mid_x * 4.0
                 # yy = rect.mid_y * 4.0
