@@ -32,6 +32,8 @@ from track.track import Track
 from track.region import Region
 from piclassifier.motiondetector import is_affected_by_ffc
 
+from matplotlib import pyplot as plt
+
 
 class Clip:
     PREVIEW = "preview"
@@ -132,8 +134,9 @@ class Clip:
                         lower_diff = np.maximum(lower_diff, diff)
                     else:
                         lower_diff = diff
-                frames = []
+                    break
 
+                frames = []
         np.clip(lower_diff, 0, None, out=lower_diff)
         if len(frames) > 0:
             self.calculate_preview_from_frame(np.average(frames, axis=0), False)
@@ -143,6 +146,13 @@ class Clip:
 
         self.calculate_preview_from_frame(initial_frames, False)
         self._set_from_background()
+        plt.subplot(141), plt.imshow(lower_diff, cmap="gray")
+        plt.title("lower_diff"), plt.xticks([]), plt.yticks([])
+        plt.subplot(142), plt.imshow(initial_frames, cmap="gray")
+        plt.title("initial_frames Image"), plt.xticks([]), plt.yticks([])
+        plt.subplot(143), plt.imshow(self.background, cmap="gray")
+        plt.title("Background Image"), plt.xticks([]), plt.yticks([])
+        plt.show()
 
     def remove_background_animals(self, background, lower_diff):
         # remove some noise
