@@ -332,7 +332,12 @@ if args.date:
 dataset_file = dataset_db_path(config)
 datasets = pickle.load(open(dataset_file, "rb"))
 dataset = datasets[args.dataset]
-
+groups = []
+groups.append((["bird"], "bird"))
+groups.append((["rodent"], "rodent"))
+dataset.regroup(
+    groups,
+)
 logging.info(
     "Dataset loaded %s, using labels %s, mapped labels %s",
     dataset.name,
