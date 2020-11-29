@@ -198,9 +198,11 @@ def preprocess_movement(
 
     if not success:
         return None
-    flow_segment = [frame.get_channel(TrackChannels.flow) for frame in segment]
-    square_flow, success = imageprocessing.square_clip(
-        flow_segment, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+    flow_segment_h = [frame.get_channel(TrackChannels.flow_h) for frame in segment]
+    flow_segment_v = [frame.get_channel(TrackChannels.flow_v) for frame in segment]
+
+    square_flow, success = imageprocessing.square_clip_flow(
+        flow_segment_h, flow_segment_v, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
     )
     if not success:
         return None
@@ -220,7 +222,7 @@ def preprocess_movement(
 
     data = np.empty((square.shape[0], square.shape[1], 3))
     data[:, :, 0] = square
-    data[:, :, 1] = flow_segment
+    data[:, :, 1] = square_flow
     # if use_dots:
     #     dots = dots / 255
     #     data[:, :, 1] = dots  # dots
