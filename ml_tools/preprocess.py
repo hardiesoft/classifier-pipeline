@@ -198,11 +198,10 @@ def preprocess_movement(
 
     if not success:
         return None
-    flow_segment_h = [frame.get_channel(TrackChannels.flow_h) for frame in segment]
-    flow_segment_v = [frame.get_channel(TrackChannels.flow_v) for frame in segment]
+    flow_segment = [frame.get_channel(TrackChannels.flow) for frame in segment]
 
     square_flow, success = imageprocessing.square_clip_flow(
-        flow_segment_h, flow_segment_v, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+        flow_segment, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
     )
     if not success:
         return None
@@ -230,9 +229,9 @@ def preprocess_movement(
     #     data[:, :, 1] = np.zeros(dots.shape)
     data[:, :, 2] = overlay  # overlay
     # for debugging
-    # tools.saveclassify_image(
-    #     data, f"samples/{sample.track.label}-{sample.track.track_id}-{flipped}"
-    # )
+    tools.saveclassify_image(
+        data, f"samples/{sample.track.label}-{sample.track.track_id}-{flipped}"
+    )
     if preprocess_fn:
         for i, frame in enumerate(data):
             frame = frame * 255

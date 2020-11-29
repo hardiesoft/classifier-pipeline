@@ -113,20 +113,19 @@ def square_clip(data, frames_per_row, tile_dim, type=None):
     return new_frame, success
 
 
-def square_clip_flow(data_flow_h, data_flow_v, frames_per_row, tile_dim, type=None):
+def square_clip_flow(data_flow, frames_per_row, tile_dim, type=None):
     # lay each frame out side by side in rows
     new_frame = np.zeros((frames_per_row * tile_dim[0], frames_per_row * tile_dim[1]))
     i = 0
     success = False
     for x in range(frames_per_row):
         for y in range(frames_per_row):
-            if i >= len(data_flow_h):
-                flow_v = data_flow_v[-1]
-                flow_h = data_flow_h[-1]
+            if i >= len(data_flow):
+                flow = data_flow[-1]
             else:
-                flow_v = data_flow_v[i]
-                flow_h = data_flow_h[i]
-
+                flow = data_flow[i]
+            flow_h = flow[:, :, 0]
+            flow_v = flow[:, :, 1]
             flow_magnitude = (
                 np.linalg.norm(np.float32([flow_h, flow_v]), ord=2, axis=0) / 4.0
             )
