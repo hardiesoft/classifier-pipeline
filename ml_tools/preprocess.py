@@ -189,11 +189,11 @@ def preprocess_movement(
         augment=augment,
         default_inset=0,
     )
-    segment = [frame.get_channel(channel) for frame in segment]
+    segment_thermal = [frame.get_channel(channel) for frame in segment]
 
     # as long as one frame it's fine
     square, success = imageprocessing.square_clip(
-        segment, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+        segment_thermal, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
     )
 
     if not success:
