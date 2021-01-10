@@ -161,8 +161,9 @@ class TrackDatabase:
         data should be  an array of int16 array
         """
         track_attrs = track.attrs
-        track_attrs["correct_prediction"] = track_attrs["tag"] == predicted_tag
-        track_attrs["predicted"] = predicted_tag
+        if predicted_tag is not None:
+            track_attrs["correct_prediction"] = track_attrs["tag"] == predicted_tag
+            track_attrs["predicted"] = predicted_tag
         track_attrs["predicted_confidence"] = int(round(100 * score))
 
         pred_data = track.create_dataset(
@@ -206,7 +207,6 @@ class TrackDatabase:
                 # group_attrs.update(clip.stats)
                 group_attrs["filename"] = clip.source_file
                 group_attrs["start_time"] = clip.video_start_time.isoformat()
-
                 group_attrs["background_thresh"] = clip.background_thresh
 
                 if clip.res_x and clip.res_y:
@@ -496,13 +496,13 @@ class TrackDatabase:
                 node_attrs["start_frame"] = track.start_frame
                 node_attrs["end_frame"] = track.end_frame
                 if track.predictions is not None:
-
                     self.add_prediction_data(
+                        clip_id,
                         track_node,
                         track.predictions,
-                        max[0],
-                        max[1],
-                        track.prediction_classes,
+                        track.predicted_class,
+                        track.predicted_confidence,
+                        labels=track.prediction_classes,
                     )
                     has_prediction = True
 
@@ -514,7 +514,7 @@ class TrackDatabase:
                         preds,
                         prediction_classes[prediction.best_label_index],
                         prediction.max_score,
-                        track.prediction_classes,
+                        labels=track.prediction_classes,
                     )
                     has_prediction = True
                 if track.confidence:

@@ -7,7 +7,7 @@ from ml_tools import imageprocessing
 import tensorflow as tf
 
 # size to scale each frame to when loaded.
-FRAME_SIZE = 48
+FRAME_SIZE = 32
 
 MIN_SIZE = 4
 
@@ -74,8 +74,8 @@ def preprocess_segment(
             LEVEL_OFFSET = 4
 
             # apply level and contrast shift
-            level_adjust = random.normalvariate(0, LEVEL_OFFSET)
-            contrast_adjust = tools.random_log(0.9, (1 / 0.9))
+            level_adjust = float(random.normalvariate(0, LEVEL_OFFSET))
+            contrast_adjust = float(tools.random_log(0.9, (1 / 0.9)))
         if random.random() <= 0.50:
             flip = True
     for i, frame in enumerate(frames):
@@ -120,7 +120,7 @@ def preprocess_segment(
             crop_region.bottom += 1
             crop_region.crop(frame_bounds)
         frame.crop_by_region(crop_region, out=frame)
-        frame.resize((FRAME_SIZE, FRAME_SIZE))
+        frame.resize_with_aspect((FRAME_SIZE, FRAME_SIZE))
         if reference_level is not None:
             frame.thermal -= reference_level[i]
             np.clip(frame.thermal, a_min=0, a_max=None, out=frame.thermal)

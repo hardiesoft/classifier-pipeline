@@ -9,6 +9,27 @@ from scipy import ndimage
 from matplotlib import pyplot as plt
 
 
+def resize_and_pad(
+    frame,
+    resize_dim,
+    new_dim,
+    pad=None,
+    interpolation=cv2.INTER_LINEAR,
+    extra_h=0,
+    extra_v=0,
+):
+    if pad is None:
+        pad = np.min(frame)
+    resized = np.full(new_dim, pad, dtype=frame.dtype)
+    offset = np.int16((np.array(new_dim) - np.array(resize_dim)) / 2.0)
+    frame_resized = resize_cv(frame, resize_dim)
+    resized[
+        offset[1] : offset[1] + frame_resized.shape[0],
+        offset[0] : offset[0] + frame_resized.shape[1],
+    ] = frame_resized
+    return resized
+
+
 def resize_cv(image, dim, interpolation=cv2.INTER_LINEAR, extra_h=0, extra_v=0):
     return cv2.resize(
         image,
@@ -174,27 +195,14 @@ def save_image_channels(data, filename):
     img.save(filename + ".png")
 
 
-def resize_cv(image, dim, interpolation=cv2.INTER_LINEAR, extra_h=0, extra_v=0):
-    return cv2.resize(
-        image,
-        dsize=(dim[0] + extra_h, dim[1] + extra_v),
-        interpolation=interpolation,
-    )
-
-
-def detect_objects(
-    image, otsus=True, threshold=0, kernel=(5, 5), dilate=False, iterations=1
-):
+def detect_objects(image, otsus=True, threshold=0, kernel=(5, 5)):
     image = np.uint8(image)
     image = cv2.GaussianBlur(image, kernel, 0)
     flags = cv2.THRESH_BINARY
     if otsus:
         flags += cv2.THRESH_OTSU
     _, image = cv2.threshold(image, threshold, 255, flags)
-    if dilate:
-        image = cv2.dilate(image, kernel, iterations=1)
-
-    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=iterations)
+    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
     components, small_mask, stats, _ = cv2.connectedComponentsWithStats(image)
     return components, small_mask, stats
 
