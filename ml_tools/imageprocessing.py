@@ -139,7 +139,7 @@ def square_clip_flow(data_flow, frames_per_row, tile_dim, type=None):
     new_frame = np.zeros((frames_per_row * tile_dim[0], frames_per_row * tile_dim[1]))
     i = 0
     success = False
-    hsv = np.zeroes((120, 160, 3))
+    hsv = np.zeros((tile_dim[0], tile_dim[1], 3), dtype=np.float32)
 
     hsv[..., 1] = 255
     for x in range(frames_per_row):
