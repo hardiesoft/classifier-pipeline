@@ -200,11 +200,11 @@ def preprocess_movement(
         return None
     flow_segment = [frame.get_channel(TrackChannels.flow) for frame in segment]
 
-    square_flow, success = imageprocessing.square_clip_flow(
-        flow_segment, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
-    )
-    if not success:
-        return None
+    # square_flow, success = imageprocessing.square_clip_flow(
+    #     flow_segment, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+    # )
+    # if not success:
+    #     return None
     dots, overlay = imageprocessing.movement_images(
         data,
         regions,
@@ -221,12 +221,12 @@ def preprocess_movement(
 
     data = np.empty((square.shape[0], square.shape[1], 3))
     data[:, :, 0] = square
-    data[:, :, 1] = square_flow
+    # data[:, :, 1] = square_flow
     # if use_dots:
     #     dots = dots / 255
     #     data[:, :, 1] = dots  # dots
     # else:
-    #     data[:, :, 1] = np.zeros(dots.shape)
+    data[:, :, 1] = np.zeros(dots.shape)
     data[:, :, 2] = overlay  # overlay
     # for debugging
     tools.saveclassify_image(
