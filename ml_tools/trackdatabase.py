@@ -176,6 +176,13 @@ class TrackDatabase:
         if labels is not None:
             track_attrs["prediction_classes"] = labels
 
+    def add_ffc(self, clip_id, ffc_frames):
+        with HDF5Manager(self.database, "a") as f:
+            clips = f["clips"]
+            if clip_id in clips:
+                clip = clips[clip_id]
+                clip.attrs["ffc_frames"] = ffc_frames
+
     def create_clip(self, clip, overwrite=True):
         """
         Creates a clip entry in database.
@@ -231,6 +238,7 @@ class TrackDatabase:
                 group_attrs["frame_temp_max"] = clip.stats.frame_stats_max
                 group_attrs["frame_temp_median"] = clip.stats.frame_stats_median
                 group_attrs["frame_temp_mean"] = clip.stats.frame_stats_mean
+                group_attrs["ffc_frames"] = clip.ffc_frames
 
                 if clip.device:
                     group_attrs["device"] = clip.device

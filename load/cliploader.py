@@ -35,6 +35,9 @@ from ml_tools.trackdatabase import TrackDatabase
 from ml_tools.previewer import Previewer
 from track.track import Track
 
+from cptv import CPTVReader
+from piclassifier.motiondetector import is_affected_by_ffc
+
 
 def process_job(loader, queue, model_file):
     i = 0
@@ -244,6 +247,16 @@ class ClipLoader:
         confidence = track_tag.get("confidence", 0)
         return tag and tag not in excluded_tags and confidence >= min_confidence
 
+    def ffc_frames(self, clip_id, source_file):
+        with open(source_file, "rb") as f:
+            reader = CPTVReader(f)
+            ffc_frames = []
+            for i, frame in enumerate(reader):
+                if is_affected_by_ffc(frame):
+                    ffc_frames.append(i)
+        print("adding ffc", ffc_frames)
+        self.database.add_ffc(clip_id, ffc_frames)
+
     def process_file(self, filename, classifier=None):
         start = time.time()
         base_filename = os.path.splitext(os.path.basename(filename))[0]
@@ -264,7 +277,8 @@ class ClipLoader:
             return
 
         metadata = tools.load_clip_metadata(metadata_filename)
-
+        self.ffc_frames(str(metadata["id"]), filename)
+        return
         if not self.reprocess and self.database.has_clip(str(metadata["id"])):
             if not self.database.has_prediction(str(metadata["id"])) and classifier:
                 print("doesn't have predictions")

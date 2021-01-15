@@ -79,6 +79,7 @@ class Clip:
         self.track_min_delta = None
         self.track_max_delta = None
         self.background_thresh = None
+        self.ffc_frames = []
         # sets defaults
         self.set_model(None)
         if background is not None:
@@ -339,6 +340,8 @@ class Clip:
             logging.info(info_string)
 
     def add_frame(self, thermal, filtered, mask, ffc_affected=False):
+        if ffc_affected:
+            self.ffc_frames.append(self.frame_on)
         self.frame_buffer.add_frame(
             thermal, filtered, mask, self.frame_on, ffc_affected
         )
