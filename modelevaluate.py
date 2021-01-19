@@ -333,8 +333,16 @@ dataset_file = dataset_db_path(config)
 datasets = pickle.load(open(dataset_file, "rb"))
 dataset = datasets[args.dataset]
 groups = []
+pests = []
 groups.append((["bird"], "bird"))
-groups.append((["rodent"], "rodent"))
+false_positives = ["false-positive", "insect"]
+for label in dataset.labels:
+    if label != "bird" and label != "insect" and label != "false-positive":
+        pests.append(label)
+    # if label not in false_positives:
+    #    groups.append(([label],label))
+groups.append((pests, "pests"))
+groups.append((false_positives, "false-positive"))
 dataset.regroup(
     groups,
 )

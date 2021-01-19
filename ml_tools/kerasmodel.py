@@ -210,12 +210,12 @@ class KerasModel:
             retrain_from = self.params.retrain_layer
         if retrain_from:
             for i, layer in enumerate(base_model.layers):
-                if isinstance(layer, tf.keras.layers.BatchNormalization):
-                    # apparently this shouldn't matter as we set base_training = False
-                    layer.trainable = False
-                    logging.info("dont train %s %s", i, layer.name)
-                else:
-                    layer.trainable = i >= retrain_from
+                # if isinstance(layer, tf.keras.layers.BatchNormalization):
+                #     # apparently this shouldn't matter as we set base_training = False
+                #     layer.trainable = False
+                #     logging.info("dont train %s %s", i, layer.name)
+                # else:
+                layer.trainable = i >= retrain_from
         else:
             base_model.trainable = self.params.base_training
 
@@ -368,7 +368,7 @@ class KerasModel:
             model_preprocess=self.preprocess_fn,
             load_threads=self.params.train_load_threads,
             use_movement=self.params.use_movement,
-            # cap_at="bird",
+            cap_at="bird",
             square_width=self.params.square_width,
         )
         self.validate = DataGenerator(
