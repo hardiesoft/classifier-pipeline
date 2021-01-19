@@ -4,7 +4,7 @@ import numpy as np
 from track.track import TrackChannels
 from ml_tools.tools import get_clipped_flow
 from scipy import ndimage
-from ml_tools.imageprocessing import resize_cv, rotate
+from ml_tools.imageprocessing import resize_cv, rotate, normalize, resize_and_pad
 
 
 @attr.s(slots=True)
@@ -68,8 +68,13 @@ class Frame:
         """
         height, width = self.thermal.shape
         flow = np.zeros([height, width, 2], dtype=np.float32)
-        threshold = np.median(self.thermal) + flow_threshold
-        scaled_thermal = np.uint8(np.clip(self.thermal - threshold, 0, 255))
+        scaled_thermal = self.thermal.copy()
+        scaled_thermal[self.mask == 0] = 0
+        scaled_thermal, _ = normalize(scaled_thermal, new_max=255)
+        scaled_thermal = np.float32(scaled_thermal)
+
+        # threshold = np.median(self.thermal) + flow_threshold
+        # scaled_thermal = np.uint8(np.clip(self.thermal - threshold, 0, 255))
         if prev_frame is not None:
             # for some reason openCV spins up lots of threads for this which really slows things down, so we
             # cap the threads to 2
@@ -120,6 +125,22 @@ class Frame:
             )
             frame.flow = flow
         return frame
+
+    def resize_with_aspect(self, dim):
+        scale_percent = (dim / np.array(self.thermal.shape)).min()
+        width = int(self.thermal.shape[1] * scale_percent)
+        height = int(self.thermal.shape[0] * scale_percent)
+        resize_dim = (width, height)
+
+        self.thermal = resize_and_pad(self.thermal, resize_dim, dim)
+        self.mask = resize_and_pad(
+            self.mask, resize_dim, dim, pad=0, interpolation=cv2.INTER_NEAREST
+        )
+        self.filtered = resize_and_pad(self.filtered, resize_dim, dim, pad=0)
+        if self.flow is not None:
+            flow_h = resize_and_pad(self.flow[:, :, 0], resize_dim, dim, pad=0)
+            flow_v = resize_and_pad(self.flow[:, :, 1], resize_dim, dim, pad=0)
+            self.flow = np.stack((flow_h, flow_v), axis=2)
 
     def resize(self, dim):
         self.thermal = resize_cv(self.thermal, dim)

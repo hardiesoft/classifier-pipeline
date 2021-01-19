@@ -30,9 +30,7 @@ from ml_tools.tools import Rectangle
 from track.region import Region
 from track.track import Track
 from piclassifier.motiondetector import is_affected_by_ffc
-from ml_tools.imageprocessing import normalize, detect_objects
-
-from matplotlib import pyplot as plt
+from ml_tools.imageprocessing import detect_objects, normalize
 
 
 class ClipTrackExtractor:
@@ -136,32 +134,17 @@ class ClipTrackExtractor:
         Calculates filtered frame from thermal
         :param thermal: the thermal frame
         :param background: (optional) used for background subtraction
-        :return: the filtered frame
+        :return: the filtered frame, threshold to use for object detection
         """
 
-        # has to be a signed int so we dont get overflow
         filtered = np.float32(thermal.copy())
         avg_change = int(round(np.average(thermal) - clip.stats.mean_background_value))
         np.clip(filtered - clip.background - avg_change, 0, None, out=filtered)
-        max = np.amax(filtered)
-        min = np.amin(filtered)
-        filtered, _ = normalize(filtered, min=min, max=max, new_max=255)
+        f_max = np.amax(filtered)
+        f_min = np.amin(filtered)
+        filtered, _ = normalize(filtered, min=f_min, max=f_max, new_max=255)
         filtered = cv2.fastNlMeansDenoising(np.uint8(filtered), None)
-        # if clip.frame_on > 90:
-        #     plt.imshow(filtered)
-        #     plt.show()
-        #     plt.imshow(clip.background)
-        #     plt.show()
-        # print(
-        #     "clip threshold is",
-        #     clip.background_thresh,
-        #     "after norm this hsould be",
-        #     min,
-        #     max,
-        #     clip.background_thresh * 255 / (max - min),
-        # )
-        # print("filtered values", np.amax(filtered), avg_change, np.amax(thermal))
-        return filtered, clip.background_thresh * 255 / (max - min)
+        return filtered, clip.background_thresh * 255 / (f_max - f_min)
 
     def _process_frame(self, clip, thermal, ffc_affected=False):
         """
@@ -172,7 +155,7 @@ class ClipTrackExtractor:
         filtered, thresh = self._get_filtered_frame(clip, thermal)
 
         _, mask, component_details = detect_objects(
-            filtered.copy(), otsus=False, threshold=thresh, iterations=2
+            filtered.copy(), otsus=False, threshold=thresh
         )
         prev_filtered = clip.frame_buffer.get_last_filtered()
         clip.add_frame(thermal, filtered, mask, ffc_affected)
@@ -214,7 +197,7 @@ class ClipTrackExtractor:
         unmatched_regions = set(regions)
         for track in clip.active_tracks:
             for region in regions:
-                distance, size_change = track.get_region_score(region)
+                distance, size_change = get_region_score(track.last_bound, region)
                 # we give larger tracks more freedom to find a match as they might move quite a bit.
 
                 max_distance = get_max_distance_change(track)
@@ -512,3 +495,17 @@ def get_max_distance_change(track):
         ClipTrackExtractor.MAX_DISTANCE,
     )
     return max_distance
+
+
+def get_region_score(last_bound: Region, region: Region):
+    """
+    Calculates a score between 2 regions based of distance and area.
+    The higher the score the more similar the Regions are
+    """
+    distance = last_bound.average_distance(region)
+
+    # ratio of 1.0 = 20 points, ratio of 2.0 = 10 points, ratio of 3.0 = 0 points.
+    # area is padded with 50 pixels so small regions don't change too much
+    size_difference = abs(region.area - last_bound.area) / (last_bound.area + 50)
+
+    return distance, size_difference

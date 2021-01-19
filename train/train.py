@@ -37,7 +37,6 @@ def train_model(run_name, conf, hyper_params, weights=None, grid_search=None):
 
     model.import_dataset(datasets_filename, lbl_p=conf.train.label_probabilities)
     groups = []
-    groups = []
     pests = []
     groups.append((["bird"], "bird"))
     false_positives = ["false-positive", "insect"]
