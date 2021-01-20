@@ -21,6 +21,8 @@ import numpy as np
 from ml_tools.datasetstructures import TrackHeader, SegmentHeader, Camera
 from ml_tools.trackdatabase import TrackDatabase
 from ml_tools.preprocess import preprocess_segment
+from ml_tools import tools
+from ml_tools import imageprocessing
 
 
 class TrackChannels:
@@ -463,6 +465,20 @@ class Dataset:
                 else track.frame_velocity,
                 default_inset=self.DEFAULT_INSET,
             )
+        return frames
+
+    def fetch_random_sample(self, sample, channel):
+        important_frames = sample.track.important_frames
+        np.random.shuffle(important_frames)
+        important_frames = important_frames[: sample.frames]
+        important_frames = [frame.frame_num for frame in important_frames]
+        important_frames.sort()
+        frames = self.db.get_track(
+            sample.track.clip_id,
+            sample.track.track_id,
+            frame_numbers=important_frames,
+            channels=channel,
+        )
         return frames
 
     def fetch_frame(self, frame_sample, channels=None):
@@ -918,6 +934,21 @@ class Dataset:
         for track in self.tracks_by_label.get(label, []):
             result.extend(track.segments)
         return result
+
+    def add_overlay(self):
+        for track in self.tracks:
+            frames = self.db.get_track(track.clip_id, track.track_id)
+            regions = []
+            for region in track.track_bounds:
+                regions.append(tools.Rectangle.from_ltrb(*region))
+
+            _, overlay = imageprocessing.movement_images(
+                frames,
+                regions,
+                dim=(120, 160),
+                require_movement=True,
+            )
+            self.db.add_overlay(track.clip_id, track.track_id, overlay)
 
     def start_async_load(self, buffer_size=128):
         """
