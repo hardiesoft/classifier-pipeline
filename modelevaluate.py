@@ -395,8 +395,8 @@ for label in dataset.labels:
     segments, frames, tracks, _, _ = dataset.get_counts(label)
     logging.info("%s %s / %s / %s", label, segments, frames, tracks)
 
-check_noise(dataset, 195961, 17050)
-raise "ex"
+# check_noise(dataset, 195961, 17050)
+# raise "ex"
 
 if args.confusion is not None:
     ev.save_confusion(dataset, args.confusion)
