@@ -94,7 +94,7 @@ class Visit:
 def process_job(queue, dataset, model_file, train_config, results_queue):
 
     classifier = KerasModel(train_config=train_config)
-    classifier.load_weights(model_file)
+    classifier.load_model(model_file)
     logging.info("Loaded model")
     i = 0
 
@@ -372,14 +372,14 @@ datasets = pickle.load(open(dataset_file, "rb"))
 dataset = datasets[args.dataset]
 groups = []
 pests = []
-groups.append((["bird"], "bird"))
+# groups.append((["bird"], "bird"))
 false_positives = ["false-positive", "insect"]
 for label in dataset.labels:
     if label != "bird" and label != "insect" and label != "false-positive":
         pests.append(label)
-    # if label not in false_positives:
-    #    groups.append(([label],label))
-groups.append((pests, "pests"))
+    if label not in false_positives:
+        groups.append(([label], label))
+# groups.append((pests, "pests"))
 groups.append((false_positives, "false-positive"))
 dataset.regroup(
     groups,

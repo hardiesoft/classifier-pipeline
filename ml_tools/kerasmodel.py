@@ -275,8 +275,8 @@ class KerasModel:
 
     def load_model(self, model_path, training=False):
         logging.info("Loading %s", model_path)
-        self.model = tf.keras.models.load_model(model_path)
         dir = os.path.dirname(model_path)
+        self.model = tf.keras.models.load_model(dir)
         self.load_meta(dir)
         if not training:
             self.params["retrain_layer"] = None
