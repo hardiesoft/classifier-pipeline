@@ -467,7 +467,7 @@ class Dataset:
             )
         return frames
 
-    def fetch_random_sample(self, sample, channel):
+    def fetch_random_sample(self, sample, channel=None):
         important_frames = sample.track.important_frames
         np.random.shuffle(important_frames)
         important_frames = important_frames[: sample.frames]
@@ -575,19 +575,20 @@ class Dataset:
             return []
         labels = self.labels.copy()
         samples = []
-
         if (cap_at or cap_samples) and label_cap is None:
             if cap_at:
                 label_cap = len(self.samples_for(cap_at, remapped=True))
             else:
                 label_cap = self.get_label_caps(labels, remapped=True)
-
         cap = None
         for label in labels:
             if label_cap:
                 cap = min(label_cap, len(self.samples_for(label, remapped=True)))
             if label == "false-positive":
-                cap = min(cap, int(label_cap * 0.5))
+                if cap:
+                    cap = min(cap, int(label_cap * 0.5))
+                else:
+                    cap = int(label_cap * 0.5)
             new = self.get_sample(cap=cap, replace=replace, label=label, random=random)
             if new is not None and len(new) > 0:
                 samples.extend(new)

@@ -38,13 +38,13 @@ def train_model(run_name, conf, hyper_params, weights=None, grid_search=None):
     model.import_dataset(datasets_filename, lbl_p=conf.train.label_probabilities)
     groups = []
     pests = []
-    groups.append((["bird"], "bird"))
+    # groups.append((["bird"], "bird"))
     false_positives = ["false-positive", "insect"]
     for label in model.datasets.train.labels:
         if label != "bird" and label != "insect" and label != "false-positive":
             pests.append(label)
-        # if label not in false_positives:
-        #    groups.append(([label],label))
+        if label not in false_positives:
+            groups.append(([label], label))
     groups.append((pests, "pests"))
     groups.append((false_positives, "false-positive"))
 

@@ -121,9 +121,9 @@ def preprocess_segment(
             crop_region.crop(frame_bounds)
         frame.crop_by_region(crop_region, out=frame)
         frame.resize_with_aspect((FRAME_SIZE, FRAME_SIZE))
-        if reference_level is not None:
-            frame.thermal -= reference_level[i]
-            np.clip(frame.thermal, a_min=0, a_max=None, out=frame.thermal)
+        # if reference_level is not None:
+        #     frame.thermal -= reference_level[i]
+        #     np.clip(frame.thermal, a_min=0, a_max=None, out=frame.thermal)
         # dont think we need to do this
         # map optical flow down to right level,
         # we pre-multiplied by 256 to fit into a 16bit int
@@ -186,12 +186,14 @@ def preprocess_movement(
 ):
     segment, flipped = preprocess_segment(
         segment,
-        reference_level=reference_level,
+        reference_level=None,
         augment=augment,
         default_inset=0,
     )
-    segment_thermal = [frame.get_channel(channel) for frame in segment]
-
+    segment_thermal = [frame.get_channel(channel).copy() for frame in segment]
+    for i, frame in enumerate(segment_thermal):
+        frame -= reference_level[i]
+        np.clip(frame, a_min=0, a_max=None, out=frame)
     # as long as one frame it's fine
     square, success = imageprocessing.square_clip(
         segment_thermal, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
@@ -199,38 +201,59 @@ def preprocess_movement(
 
     if not success:
         return None
-    if overlay is None:
-        dots, overlay = imageprocessing.movement_images(
-            data,
-            regions,
-            dim=square.shape,
-            require_movement=True,
-        )
-    else:
-        overlay_full_size = np.zeros((square.shape[0], square.shape[1]))
-        overlay_full_size[: overlay.shape[0], : overlay.shape[1]] = overlay
-        overlay = overlay_full_size
-    overlay, success = imageprocessing.normalize(overlay, min=0)
+
+    segment_filtered = [frame.get_channel(TrackChannels.filtered) for frame in segment]
+    square_filtered, success = imageprocessing.square_clip(
+        segment_filtered, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+    )
+
     if not success:
         return None
 
-    if flipped:
-        overlay = np.flip(overlay, axis=1)
-        # dots = np.flip(dots, axis=1)
+    segment_normed = [
+        frame.get_channel(channel)
+        * np.clip(frame.get_channel(TrackChannels.mask), 0, 1)
+        for frame in segment
+    ]
+    square_normed, success = imageprocessing.square_clip(
+        segment_normed, frames_per_row, (FRAME_SIZE, FRAME_SIZE), type
+    )
+    if not success:
+        return None
+    data = np.stack([square, square_filtered, square_normed], axis=2)
+    #
+    # if overlay is None:
+    #     dots, overlay = imageprocessing.movement_images(
+    #         data,
+    #         regions,
+    #         dim=square.shape,
+    #         require_movement=True,
+    #     )
+    # else:
+    #     overlay_full_size = np.zeros((square.shape[0], square.shape[1]))
+    #     overlay_full_size[: overlay.shape[0], : overlay.shape[1]] = overlay
+    #     overlay = overlay_full_size
+    # overlay, success = imageprocessing.normalize(overlay, min=0)
+    # if not success:
+    #     return None
+    #
+    # if flipped:
+    #     overlay = np.flip(overlay, axis=1)
+    #     # dots = np.flip(dots, axis=1)
 
-    data = np.empty((square.shape[0], square.shape[1], 3))
-    data[:, :, 0] = square
-    if use_dots:
-        dots = dots / 255
-        data[:, :, 1] = dots  # dots
-    else:
-        data[:, :, 1] = np.zeros(overlay.shape)
-    data[:, :, 2] = overlay  # overlay
+    # data = np.empty((square.shape[0], square.shape[1], 3))
+    # data[:, :, 0] = square
+    # if use_dots:
+    #     dots = dots / 255
+    #     data[:, :, 1] = dots  # dots
+    # else:
+    #     data[:, :, 1] = np.zeros(overlay.shape)
+    # data[:, :, 2] = overlay  # overlay
     # for debugging
-    # tools.saveclassify_image(
-    #     data,
-    #     f"samples/{sample.track.label}-{sample.track.clip_id}-{sample.track.track_id}-{flipped}",
-    # )
+    tools.saveclassify_image(
+        data,
+        f"samples/{sample.track.label}-{sample.track.clip_id}-{sample.track.track_id}-{flipped}",
+    )
     if preprocess_fn:
         for i, frame in enumerate(data):
             frame = frame * 255
