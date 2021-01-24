@@ -586,7 +586,7 @@ class Dataset:
         for label in labels:
             if label_cap:
                 cap = min(label_cap, len(self.samples_for(label, remapped=True)))
-            if label == "false-positive":
+            if label == "false-positive" and label_cap:
                 cap = min(cap, int(label_cap * 0.5))
             new = self.get_sample(cap=cap, replace=replace, label=label, random=random)
             if new is not None and len(new) > 0:

@@ -368,21 +368,21 @@ class KerasModel:
             model_preprocess=self.preprocess_fn,
             load_threads=self.params.train_load_threads,
             use_movement=self.params.use_movement,
-            # cap_at="bird",
+            cap_at="bird",
             square_width=self.params.square_width,
         )
 
-        bird = len(self.datasets.validation.samples_for("bird", remapped=True))
-        pests = len(self.datasets.validation.samples_for("pests", remapped=True))
-        fps = len(self.datasets.validation.samples_for("false-positive", remapped=True))
-        total = bird + pests + fps
-        bird_weight = 0.4 * total / bird
-        pests_weight = 0.4 * total / pests
-        fps = 0.4 * total / fps
-        class_weight = {}
-        class_weight[0] = bird_weight
-        class_weight[1] = pests_weight
-        class_weight[2] = fps
+        # bird = len(self.datasets.validation.samples_for("bird", remapped=True))
+        # pests = len(self.datasets.validation.samples_for("pests", remapped=True))
+        # fps = len(self.datasets.validation.samples_for("false-positive", remapped=True))
+        # total = bird + pests + fps
+        # bird_weight = 0.4 * total / bird
+        # pests_weight = 0.4 * total / pests
+        # fps = 0.4 * total / fps
+        # class_weight = {}
+        # class_weight[0] = bird_weight
+        # class_weight[1] = pests_weight
+        # class_weight[2] = fps
         self.validate = DataGenerator(
             self.datasets.validation,
             self.labels,
@@ -395,7 +395,7 @@ class KerasModel:
             epochs=epochs,
             load_threads=1,
             use_movement=self.params.use_movement,
-            # cap_at="bird",
+            cap_at="bird",
             square_width=self.params.square_width,
         )
         if not self.model:
@@ -419,7 +419,7 @@ class KerasModel:
                 ),
                 *checkpoints,
             ],  # log metrics
-            class_weight=class_weight,
+            # class_weight=class_weight,
         )
         self.validate.stop_load()
         self.train.stop_load()
