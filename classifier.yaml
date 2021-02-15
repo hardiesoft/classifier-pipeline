@@ -4,21 +4,21 @@ use_opt_flow: False
 debug: False
 
 # root folder where the source and output folders belong
-base_data_folder: "<full path>"
+base_data_folder: "/host"
 # Enables/Disables GPU accelerated classification
 use_gpu: false
 
 # source_folder is where the cptv files reside under. It is relative
 # to base_data_folder.
-source_folder: "cptv"
+source_folder: "cptv-files"
 
 # tracks_folder is where the track data files will be created. It is
 # specified relative to base_data_folder.
-tracks_folder: "tracks"
+tracks_folder: "cptv-tracks"
 
 # which folders (tags) to ignore when selecting cptv files from source_folder
-excluded_tags: ['untagged', 'dog', 'unidentified', 'hard', 'multi', 'moving',
-                'bird-kiwi', 'for_grant', 'missclassified', 'other']
+excluded_tags: [ "untagged", "dog", "unidentified", "hard", "multi", "moving",
+                "bird-kiwi", "for_grant", "missclassified", "other" ]
 
 # Reprocess files which have already been processed.
 reprocess: true
@@ -33,7 +33,7 @@ labels : ['bird', 'cat', 'false-positive', 'hedgehog', 'insect', 'leporidae', 'm
 
 
 # Number of worker threads to use.  0 disables worker pool and forces a single thread.
-worker_threads: 0
+worker_threads: 3
 
 tracking:
     #
@@ -279,7 +279,7 @@ build:
 
     # clips after this date will be ignored.
     # note: this is based on the UTC date.
-    clip_end_date: "2019-12-31"
+    clip_end_date: "2021-12-31"
 
     # minimum average mass for test segment
     test_min_mass: 30

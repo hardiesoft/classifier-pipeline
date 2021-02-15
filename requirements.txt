@@ -2,7 +2,7 @@ tensorflow~=2.4.1
 matplotlib~=3.0
 pytz
 cptv==1.1.0
-opencv-python~=3.4
+opencv-python-headless~=3.4
 numpy~=1.16
 scipy==1.4.1
 python-dateutil
