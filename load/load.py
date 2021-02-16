@@ -23,7 +23,6 @@ def parse_params():
         "-p",
         "--create-previews",
         action="count",
-        default=None,
         help="Create MP4 previews for tracks (can be slow)",
     )
     parser.add_argument(
@@ -60,8 +59,6 @@ def parse_params():
 
     if args.create_previews:
         config.load.preview = "tracking"
-    else:
-        config.load.preview = "none"
     if args.verbose:
         config.tracking.verbose = True
 
