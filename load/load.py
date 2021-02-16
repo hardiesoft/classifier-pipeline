@@ -63,7 +63,7 @@ def parse_params():
     else:
         config.load.preview = "none"
     if args.verbose:
-        config.loader.verbose = True
+        config.tracking.verbose = True
 
     return config, args
 
