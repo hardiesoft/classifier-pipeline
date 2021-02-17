@@ -72,6 +72,7 @@ def load_clips(config, args):
     if target is None:
         target = config.source_folder
     if os.path.splitext(target)[1] == ".cptv":
+        print("Loading", target)
         loader.process_file(target)
     else:
         loader.process_all(target)
@@ -84,10 +85,14 @@ def print_opencl_info():
             print("OpenCL found and enabled, threads={}".format(cv2.getNumThreads()))
         else:
             print("OpenCL found but disabled")
+    else:
+        print("openCL not available")
 
 
 def main():
     config, args = parse_params()
+    cv2.setNumThreads(2)
+    print_opencl_info()
     if config and args:
         load_clips(config, args)
 

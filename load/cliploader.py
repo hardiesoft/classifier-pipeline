@@ -104,12 +104,14 @@ class ClipLoader:
         # overwrite any old clips.
         # Note: we do this even if there are no tracks so there there will be a blank clip entry as a record
         # that we have processed it.
+        print("_export tracks")
         self.database.create_clip(clip)
 
         for track in clip.tracks:
             start_time, end_time = clip.start_and_end_time_absolute(
                 track.start_s, track.end_s
             )
+            print("Adding track", start_time, end_time)
             track_data = []
             for region in track.bounds_history:
                 frame = clip.frame_buffer.get_frame(region.frame_number)

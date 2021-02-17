@@ -298,6 +298,7 @@ class Clip:
         )
         self.from_metadata = True
         self.tracks = set(tracks)
+        print("load_metadata", tracks)
 
     def load_tracks_meta(self, metadata, include_filtered_channel, tag_precedence):
         tracks_meta = metadata["Tracks"]

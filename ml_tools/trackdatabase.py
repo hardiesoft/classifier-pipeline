@@ -24,7 +24,7 @@ special_datasets = ["background_frame", "predictions"]
 class HDF5Manager:
     """ Class to handle locking of HDF5 files. """
 
-    LOCK_FILE = "/var/lock/classifier-hdf5.lock"
+    LOCK_FILE = "F:\\Cacophony\classifier-hdf5.lock"
 
     def __init__(self, db, mode="r"):
         self.mode = mode
@@ -99,8 +99,10 @@ class TrackDatabase:
         :param overwrite: Overwrites existing clip (if it exists).
         """
         print("creating clip {}".format(clip.get_id()))
+        print("finding db", self.database)
         clip_id = str(clip.get_id())
         with HDF5Manager(self.database, "a") as f:
+            print("got db", self.database)
             clips = f["clips"]
             if overwrite and clip_id in clips:
 

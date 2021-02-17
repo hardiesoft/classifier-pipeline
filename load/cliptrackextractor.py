@@ -69,7 +69,7 @@ class ClipTrackExtractor:
         """
         Loads a cptv file, and prepares for track extraction.
         """
-
+        print("Parse clip", clip)
         clip.set_frame_buffer(
             self.config.high_quality_optical_flow,
             self.cache_to_disk,

@@ -179,6 +179,7 @@ tracking:
 
     # Minimum confidence of track tag to accept
     min_tag_confidence: 0.8
+
 load:
     # precidence of tags (lower first)
     tag_precedence:
@@ -189,18 +190,18 @@ load:
     # Use fast BLOSC compression (requires plugin), when saving tracks to database
     enable_compression: False
 
-  # Includes the filtered channel in tracks database.  This is typically not used.  If compression is enabled the
-  # filesize can be reduced by not including it.
-  include_filtered_channel: True
+    # Includes the filtered channel in tracks database.  This is typically not used.  If compression is enabled the
+    # filesize can be reduced by not including it.
+    include_filtered_channel: True
 
-  # Create a MP4 preview of the recording.  Options are "none", "raw", "boxes", "classified", "tracking"
-  # none - won't create a preview video
-  # raw - just the video (no classification or tracks)
-  # boxes - show track boxes but no text
-  # classified - show tracks and classification values
-  # tracking -  four frame video view, including thermal, filtered, mask and flow layers
-  preview: "none"
-  high_quality_optical_flow: True
+    # Create a MP4 preview of the recording.  Options are "none", "raw", "boxes", "classified", "tracking"
+    # none - won't create a preview video
+    # raw - just the video (no classification or tracks)
+    # boxes - show track boxes but no text
+    # classified - show tracks and classification values
+    # tracking -  four frame video view, including thermal, filtered, mask and flow layers
+    preview: "none"
+    high_quality_optical_flow: True
 
     #cache buffer frame to disk reducing memory usage
     cache_to_disk: False
@@ -298,7 +299,7 @@ build:
 
     # clips after this date will be ignored.
     # note: this is based on the UTC date.
-    clip_end_date: None
+    clip_end_date: "2021-12-31"
 
     # minimum average mass for test segment
     test_min_mass: 20

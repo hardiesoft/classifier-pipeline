@@ -233,6 +233,7 @@ class CPTVTrackExtractor(CPTVFileProcessor):
         if not tracker.extract_tracks():
             # this happens if the tracker rejected the video for some reason (i.e. too hot, or not static background).
             # we still need to make a record that we looked at it though.
+            print("not tracker.extract_tracks")
             self.database.create_clip(os.path.basename(full_path), tracker)
             logging.warning(" - skipped (%s)", tracker.reject_reason)
             return tracker
@@ -275,6 +276,7 @@ class CPTVTrackExtractor(CPTVFileProcessor):
         # overwrite any old clips.
         # Note: we do this even if there are no tracks so there there will be a blank clip entry as a record
         # that we have processed it.
+        print("export tracks")
         database.create_clip(clip_id, tracker)
 
         if len(tracker.tracks) == 0:
