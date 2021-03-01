@@ -22,7 +22,11 @@ import logging
 import numpy as np
 import yaml
 
+import sys
+#from .. import CPTVReader
+sys.path.insert(1, "/host/python-cptv")
 from cptv import CPTVReader
+
 import cv2
 
 from .clip import Clip
